@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, LogOut, BookOpen, Users, Trophy, Target, TrendingUp } from "lucide-react";
+import { Plus, LogOut, BookOpen, Users, Trophy, Target, TrendingUp, PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CollectionCard from "@/components/CollectionCard";
@@ -14,6 +14,7 @@ import { TopicBreakdown } from "@/components/TopicBreakdown";
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [collections, setCollections] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [analytics, setAnalytics] = useState({
@@ -35,6 +36,7 @@ const Dashboard = () => {
       }
       setUser(session.user);
       await loadCollections();
+      await loadQuizzes();
     };
 
     checkAuth();
@@ -70,6 +72,29 @@ const Dashboard = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadQuizzes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quizzes')
+        .select(`
+          id,
+          title,
+          description,
+          created_at,
+          collections (
+            id,
+            title
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setQuizzes(data || []);
+    } catch (error: any) {
+      console.error('Error loading quizzes:', error);
     }
   };
 
@@ -240,6 +265,61 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Ready to Learn Hero Section */}
+        {quizzes.length > 0 && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl p-6 border border-primary/20">
+              <div className="flex items-center gap-3 mb-4">
+                <PlayCircle className="h-8 w-8 text-primary" />
+                <div>
+                  <h2 className="text-2xl font-bold">Ready to Learn</h2>
+                  <p className="text-muted-foreground">Start practicing with available quizzes</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {quizzes.slice(0, 6).map((quiz) => (
+                  <div
+                    key={quiz.id}
+                    className="bg-card rounded-xl p-5 border shadow-sm hover:shadow-md transition-all group"
+                  >
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {quiz.collections?.title || 'Unknown Collection'}
+                        </p>
+                        <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                          {quiz.title}
+                        </h3>
+                        {quiz.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {quiz.description}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => navigate(`/quiz/${quiz.id}`)}
+                        className="w-full bg-gradient-to-r from-primary to-primary-dark h-12 text-base font-semibold"
+                      >
+                        <PlayCircle className="h-5 w-5 mr-2" />
+                        Start Learning
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {quizzes.length > 6 && (
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    +{quizzes.length - 6} more quizzes available in your collections
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tabs for Collections and Analytics */}
         <Tabs defaultValue="collections" className="space-y-6">
