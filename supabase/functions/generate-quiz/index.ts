@@ -51,6 +51,23 @@ serve(async (req) => {
       throw new Error('No analyzed materials found. Please run "Extract Content" first.');
     }
 
+    // Fetch existing quizzes and their questions to ensure variety
+    const { data: existingQuizzes } = await supabase
+      .from('quizzes')
+      .select(`
+        id,
+        title,
+        questions (
+          question_text,
+          topic_category,
+          bloom_level
+        )
+      `)
+      .eq('collection_id', collectionId);
+
+    const existingQuestions = existingQuizzes?.flatMap(q => q.questions || []) || [];
+    const quizCount = existingQuizzes?.length || 0;
+
     // Call Lovable AI with Gemini to analyze images and generate quiz
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -75,6 +92,14 @@ serve(async (req) => {
   * English materials → Entire quiz in English
   * German materials → Entire quiz in German
 
+🔄 VARIATION REQUIREMENT (MOST IMPORTANT):
+${quizCount > 0 ? `⚠️ CRITICAL: This collection already has ${quizCount} quiz(zes). You MUST create COMPLETELY DIFFERENT questions!
+- DO NOT repeat questions from previous quizzes
+- Focus on DIFFERENT aspects, angles, and scenarios
+- Use DIFFERENT wording and question formats
+- Explore DIFFERENT topics or deeper/alternative perspectives
+- Be CREATIVE and find new ways to test the same material` : '✨ This is the first quiz - create a solid foundation covering major topics'}
+
 QUESTION GENERATION STRATEGY:
 - Generate 1 question per 1.5-2 pages of content (e.g., 19 pages → 12-15 questions)
 - Minimum 10 questions, maximum 20 questions
@@ -83,6 +108,7 @@ QUESTION GENERATION STRATEGY:
   * 40% Understand/Apply (problem-solving, method selection, real scenarios)
   * 20% Analyze (compare/contrast, explain why, relationships)
   * 10% Evaluate/Create (higher-order thinking, synthesis)
+- ${quizCount === 0 ? 'Cover ALL major topics broadly' : quizCount === 1 ? 'Dig deeper into topics, ask "why" and "how"' : 'Focus on edge cases, comparisons, and synthesis'}
 
 WRONG ANSWERS MUST BE INTELLIGENT:
 - Base wrong answers on common student misconceptions
@@ -128,6 +154,13 @@ Make questions clear, educational, and exam-realistic. Ensure comprehensive cove
             role: 'user',
             content: `Create a quiz from the following pre-analyzed study materials about: ${collection.title}. ${collection.description || ''}
 
+${existingQuestions.length > 0 ? `
+🚫 AVOID THESE ${existingQuestions.length} EXISTING QUESTIONS:
+${existingQuestions.slice(0, 15).map((q: any) => `- "${q.question_text}" (${q.topic_category || 'general'})`).join('\n')}
+${existingQuestions.length > 15 ? `... and ${existingQuestions.length - 15} more questions\n` : ''}
+⚡ You MUST create questions with DIFFERENT focus, wording, and angles!
+` : ''}
+
 KNOWLEDGE BASE (${analyses.length} pages):
 
 ${analyses.map((analysis, idx) => `
@@ -144,7 +177,7 @@ ${analysis.emphasis_markers?.length > 0 ? `Important: ${analysis.emphasis_marker
 ${analysis.visual_elements?.length > 0 ? `Visuals: ${analysis.visual_elements.join('; ')}` : ''}
 `).join('\n\n')}
 
-Create a comprehensive quiz covering all major topics with proper distribution across Bloom's taxonomy levels.`
+Create a comprehensive quiz covering all major topics with proper distribution across Bloom's taxonomy levels. ${quizCount > 0 ? 'Remember: VARY from existing questions!' : ''}`
           }
         ],
         response_format: { type: 'json_object' }
