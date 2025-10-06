@@ -23,6 +23,7 @@ const Collection = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [collection, setCollection] = useState<any | null>(null);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -49,6 +50,15 @@ const Collection = () => {
 
       if (error) throw error;
       setCollection(data);
+
+      // Load quizzes for this collection
+      const { data: quizzesData } = await supabase
+        .from('quizzes')
+        .select('id, title, description, created_at')
+        .eq('collection_id', id)
+        .order('created_at', { ascending: false });
+      
+      setQuizzes(quizzesData || []);
 
       // Basic SEO without extra deps
       if (data) {
@@ -148,6 +158,9 @@ const Collection = () => {
         title: 'Quiz generated',
         description: `Created ${data?.quiz?.questionCount ?? 0} questions for this collection.`,
       });
+
+      // Reload to fetch the new quiz
+      await load();
     } catch (e: any) {
       console.error('generate-quiz failed', e);
       const msg = e?.message || 'Failed to generate quiz.';
@@ -258,6 +271,31 @@ const Collection = () => {
                 )}
               </CardContent>
             </Card>
+
+            {quizzes.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Available Quizzes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {quizzes.map((quiz) => (
+                    <div key={quiz.id} className="border rounded-lg p-4">
+                      <h3 className="font-semibold mb-1">{quiz.title}</h3>
+                      {quiz.description && (
+                        <p className="text-sm text-muted-foreground mb-3">{quiz.description}</p>
+                      )}
+                      <Button 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => navigate(`/quiz/${quiz.id}`)}
+                      >
+                        Take Quiz
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>

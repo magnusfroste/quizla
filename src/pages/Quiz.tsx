@@ -1,0 +1,346 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+
+interface Question {
+  id: string;
+  question_text: string;
+  correct_answer: string;
+  wrong_answers: string[];
+  explanation: string | null;
+  order_index: number;
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  description: string | null;
+  collection_id: string;
+}
+
+const Quiz = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [loading, setLoading] = useState(true);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState<number | null>(null);
+
+  useEffect(() => {
+    loadQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const loadQuiz = async () => {
+    if (!id) return;
+    try {
+      const { data: quizData, error: quizError } = await supabase
+        .from('quizzes')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (quizError) throw quizError;
+      if (!quizData) throw new Error('Quiz not found');
+
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('quiz_id', id)
+        .order('order_index', { ascending: true });
+
+      if (questionsError) throw questionsError;
+
+      setQuiz(quizData);
+      setQuestions(questionsData || []);
+
+      // Create attempt
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: attemptData, error: attemptError } = await supabase
+        .from('attempts')
+        .insert({
+          quiz_id: id,
+          user_id: session?.user?.id || null,
+          total_questions: questionsData?.length || 0,
+        })
+        .select()
+        .single();
+
+      if (attemptError) throw attemptError;
+      setAttemptId(attemptData.id);
+
+      document.title = `${quizData.title} | QuizGenius`;
+    } catch (e: any) {
+      console.error('Failed to load quiz', e);
+      toast({
+        title: 'Could not load quiz',
+        description: e?.message || 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnswer = (answer: string) => {
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+  };
+
+  const handleNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!attemptId) return;
+
+    try {
+      let correctCount = 0;
+
+      for (const question of questions) {
+        const selectedAnswer = answers[question.id];
+        const isCorrect = selectedAnswer === question.correct_answer;
+        if (isCorrect) correctCount++;
+
+        await supabase.from('answers').insert({
+          attempt_id: attemptId,
+          question_id: question.id,
+          selected_answer: selectedAnswer || '',
+          is_correct: isCorrect,
+        });
+      }
+
+      await supabase
+        .from('attempts')
+        .update({
+          score: correctCount,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', attemptId);
+
+      setScore(correctCount);
+      setSubmitted(true);
+
+      toast({
+        title: 'Quiz submitted',
+        description: `You scored ${correctCount} out of ${questions.length}`,
+      });
+    } catch (e: any) {
+      console.error('Failed to submit quiz', e);
+      toast({
+        title: 'Could not submit quiz',
+        description: e?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getShuffledAnswers = (question: Question) => {
+    const all = [question.correct_answer, ...question.wrong_answers];
+    return all.sort(() => Math.random() - 0.5);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!quiz || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">Quiz not found or no questions available.</p>
+        <Button variant="outline" onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
+      </div>
+    );
+  }
+
+  const currentQuestion = questions[currentIndex];
+  const selectedAnswer = answers[currentQuestion.id];
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+        <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-4 flex items-center gap-3">
+            <Button variant="ghost" onClick={() => navigate(`/collection/${quiz.collection_id}`)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Collection
+            </Button>
+            <h1 className="text-xl font-bold">Quiz Results</h1>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-8 max-w-3xl">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-2xl">Your Score</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <p className="text-5xl font-bold text-primary mb-2">
+                  {score} / {questions.length}
+                </p>
+                <p className="text-muted-foreground">
+                  {((score || 0) / questions.length * 100).toFixed(0)}% correct
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Review Answers</h2>
+            {questions.map((question, idx) => {
+              const userAnswer = answers[question.id];
+              const isCorrect = userAnswer === question.correct_answer;
+              return (
+                <Card key={question.id}>
+                  <CardHeader>
+                    <div className="flex items-start gap-3">
+                      {isCorrect ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-destructive mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <p className="text-sm text-muted-foreground mb-1">Question {idx + 1}</p>
+                        <CardTitle className="text-lg">{question.question_text}</CardTitle>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium mb-1">Your answer:</p>
+                      <p className={`text-sm ${isCorrect ? 'text-green-600' : 'text-destructive'}`}>
+                        {userAnswer || 'No answer selected'}
+                      </p>
+                    </div>
+                    {!isCorrect && (
+                      <div>
+                        <p className="text-sm font-medium mb-1">Correct answer:</p>
+                        <p className="text-sm text-green-600">{question.correct_answer}</p>
+                      </div>
+                    )}
+                    {question.explanation && (
+                      <div className="bg-muted/50 rounded-md p-3">
+                        <p className="text-sm font-medium mb-1">Explanation:</p>
+                        <p className="text-sm text-muted-foreground">{question.explanation}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <Button onClick={() => navigate(`/collection/${quiz.collection_id}`)}>
+              Back to Collection
+            </Button>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Retake Quiz
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center gap-3">
+          <Button variant="ghost" onClick={() => navigate(`/collection/${quiz.collection_id}`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-xl font-bold">{quiz.title}</h1>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8 max-w-2xl">
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-muted-foreground">
+                Question {currentIndex + 1} of {questions.length}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {Object.keys(answers).length} answered
+              </p>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-xl">{currentQuestion.question_text}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {getShuffledAnswers(currentQuestion).map((answer, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleAnswer(answer)}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                  selectedAnswer === answer
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                }`}
+              >
+                {answer}
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-3 justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentIndex === 0}
+          >
+            Previous
+          </Button>
+          <div className="flex gap-3">
+            {currentIndex === questions.length - 1 ? (
+              <Button onClick={handleSubmit}>
+                Submit Quiz
+              </Button>
+            ) : (
+              <Button onClick={handleNext}>
+                Next
+              </Button>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Quiz;
