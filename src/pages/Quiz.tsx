@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, ChevronDown, ChevronUp, RotateCcw, BookOpen, Home } from "lucide-react";
 import { MobileQuizNavigation } from "@/components/MobileQuizNavigation";
 import { useTouchSwipe } from "@/hooks/use-touch-swipe";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -218,13 +218,13 @@ const Quiz = () => {
 
         <main className="container mx-auto px-4 py-8 max-w-3xl">
           {/* Collapsible Score Summary on Mobile */}
-          <Card className="mb-6 md:mb-6 sticky top-16 md:relative z-40 md:z-auto">
+          <Card className="mb-8 md:mb-8 sticky top-16 md:relative z-40 md:z-auto border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg">
             <CardHeader 
               className="cursor-pointer md:cursor-default"
               onClick={() => isMobile && setScoreSummaryExpanded(!scoreSummaryExpanded)}
             >
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl md:text-2xl">Your Score</CardTitle>
+                <CardTitle className="text-2xl md:text-3xl font-bold">Your Score</CardTitle>
                 {isMobile && (
                   <Button 
                     variant="ghost" 
@@ -243,11 +243,11 @@ const Quiz = () => {
                 )}
               </div>
               {/* Always show score summary */}
-              <div className="text-center pt-4">
-                <p className="text-4xl md:text-5xl font-bold text-primary mb-2">
+              <div className="text-center pt-6">
+                <p className="text-5xl md:text-6xl font-bold text-primary mb-3">
                   {score} / {questions.length}
                 </p>
-                <p className="text-sm md:text-base text-muted-foreground">
+                <p className="text-base md:text-lg text-muted-foreground font-medium">
                   {((score || 0) / questions.length * 100).toFixed(0)}% correct
                 </p>
               </div>
@@ -297,7 +297,7 @@ const Quiz = () => {
           </Card>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Review Answers</h2>
+            <h2 className="text-2xl font-bold">Review Answers</h2>
             {questions.map((question, idx) => {
               const userAnswer = answers[question.id];
               const isCorrect = userAnswer === question.correct_answer;
@@ -378,21 +378,39 @@ const Quiz = () => {
             })}
           </div>
 
-          <div className="mt-6 flex flex-col md:flex-row gap-3 pb-8">
-            <Button 
-              onClick={() => navigate(`/collection/${quiz.collection_id}`)}
-              className="w-full md:w-auto h-12 md:h-10"
-            >
-              Back to Collection
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.reload()}
-              className="w-full md:w-auto h-12 md:h-10"
-            >
-              Retake Quiz
-            </Button>
-          </div>
+          <Card className="mt-8 mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-center mb-4">What's next?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Button 
+                  onClick={() => window.location.reload()}
+                  className="w-full h-14 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                  size="lg"
+                >
+                  <RotateCcw className="h-5 w-5 mr-2" />
+                  Try Again
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate(`/collection/${quiz.collection_id}`)}
+                  className="w-full h-14 text-base font-semibold border-2"
+                  size="lg"
+                >
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Learn More
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full h-14 text-base font-semibold border-2"
+                  size="lg"
+                >
+                  <Home className="h-5 w-5 mr-2" />
+                  Home
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
