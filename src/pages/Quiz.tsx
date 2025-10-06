@@ -4,8 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { MobileQuizNavigation } from "@/components/MobileQuizNavigation";
+import { useTouchSwipe } from "@/hooks/use-touch-swipe";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Question {
   id: string;
@@ -35,6 +39,7 @@ const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -44,6 +49,12 @@ const Quiz = () => {
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
+
+  // Mobile swipe navigation
+  useTouchSwipe({
+    onSwipeLeft: () => !submitted && handleNext(),
+    onSwipeRight: () => !submitted && handlePrevious(),
+  });
 
   useEffect(() => {
     loadQuiz();
@@ -200,17 +211,18 @@ const Quiz = () => {
         </header>
 
         <main className="container mx-auto px-4 py-8 max-w-3xl">
-          <Card className="mb-6">
+          {/* Sticky Score Card on Mobile */}
+          <Card className="mb-6 md:mb-6 sticky top-16 md:relative z-40 md:z-auto">
             <CardHeader>
-              <CardTitle className="text-2xl">Your Score</CardTitle>
+              <CardTitle className="text-xl md:text-2xl">Your Score</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center space-y-4">
                 <div>
-                  <p className="text-5xl font-bold text-primary mb-2">
+                  <p className="text-4xl md:text-5xl font-bold text-primary mb-2">
                     {score} / {questions.length}
                   </p>
-                  <p className="text-muted-foreground">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     {((score || 0) / questions.length * 100).toFixed(0)}% correct
                   </p>
                 </div>
@@ -335,11 +347,18 @@ const Quiz = () => {
             })}
           </div>
 
-          <div className="mt-6 flex gap-3">
-            <Button onClick={() => navigate(`/collection/${quiz.collection_id}`)}>
+          <div className="mt-6 flex flex-col md:flex-row gap-3 pb-8">
+            <Button 
+              onClick={() => navigate(`/collection/${quiz.collection_id}`)}
+              className="w-full md:w-auto h-12 md:h-10"
+            >
               Back to Collection
             </Button>
-            <Button variant="outline" onClick={() => window.location.reload()}>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+              className="w-full md:w-auto h-12 md:h-10"
+            >
               Retake Quiz
             </Button>
           </div>
@@ -371,12 +390,10 @@ const Quiz = () => {
                 {Object.keys(answers).length} answered
               </p>
             </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all"
-                style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-              />
-            </div>
+            <Progress 
+              value={((currentIndex + 1) / questions.length) * 100} 
+              className="h-3 md:h-2"
+            />
           </CardContent>
         </Card>
 
@@ -413,7 +430,7 @@ const Quiz = () => {
               <button
                 key={idx}
                 onClick={() => handleAnswer(answer)}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                className={`w-full text-left p-5 md:p-4 rounded-lg border-2 transition-all min-h-[64px] text-base md:text-sm ${
                   selectedAnswer === answer
                     ? 'border-primary bg-primary/10'
                     : 'border-border hover:border-primary/50 hover:bg-muted/50'
@@ -425,7 +442,8 @@ const Quiz = () => {
           </CardContent>
         </Card>
 
-        <div className="flex gap-3 justify-between">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex gap-3 justify-between">
           <Button
             variant="outline"
             onClick={handlePrevious}
@@ -445,7 +463,22 @@ const Quiz = () => {
             )}
           </div>
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileQuizNavigation
+          currentIndex={currentIndex}
+          totalQuestions={questions.length}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+          onSubmit={handleSubmit}
+          canGoBack={currentIndex > 0}
+          canGoNext={currentIndex < questions.length - 1}
+          isLastQuestion={currentIndex === questions.length - 1}
+        />
       </main>
+
+      {/* Add padding to prevent content from being hidden behind mobile nav */}
+      <div className="md:hidden h-24" />
     </div>
   );
 };

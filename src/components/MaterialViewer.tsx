@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useTouchSwipe } from "@/hooks/use-touch-swipe";
 
 interface Material {
   id: string;
@@ -68,6 +69,20 @@ export function MaterialViewer({
     ? analyses.find(a => a.material_id === currentMaterial.id)
     : null;
 
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : materials.length - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev < materials.length - 1 ? prev + 1 : 0));
+  };
+
+  // Touch swipe gestures
+  useTouchSwipe({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrevious,
+  });
+
   useEffect(() => {
     setCurrentIndex(initialIndex);
   }, [initialIndex]);
@@ -107,19 +122,11 @@ export function MaterialViewer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, currentIndex, materials.length]);
 
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : materials.length - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev < materials.length - 1 ? prev + 1 : 0));
-  };
-
   if (!currentMaterial) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl h-[90vh] p-0">
+      <DialogContent className="max-w-7xl h-screen md:h-[90vh] max-h-screen p-0">
         <DialogHeader className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg truncate max-w-md">
@@ -151,7 +158,7 @@ export function MaterialViewer({
           <Button
             variant="secondary"
             size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full shadow-lg"
+            className="absolute left-2 md:left-4 top-2/3 md:top-1/2 -translate-y-1/2 h-14 w-14 md:h-12 md:w-12 rounded-full shadow-lg"
             onClick={handlePrevious}
             disabled={loading}
           >
@@ -160,7 +167,7 @@ export function MaterialViewer({
           <Button
             variant="secondary"
             size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full shadow-lg"
+            className="absolute right-2 md:right-4 top-2/3 md:top-1/2 -translate-y-1/2 h-14 w-14 md:h-12 md:w-12 rounded-full shadow-lg"
             onClick={handleNext}
             disabled={loading}
           >
