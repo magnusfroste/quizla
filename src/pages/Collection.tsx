@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download } from "lucide-react";
+import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download, Camera } from "lucide-react";
 import { StudyMaterialViewer } from "@/components/StudyMaterialViewer";
 import { MaterialGallery } from "@/components/MaterialGallery";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { generateStudyMaterialPDF } from "@/lib/pdfExport";
+import { UploadProgress } from "@/components/UploadProgress";
+import { compressImage, createImagePreview } from "@/lib/imageCompression";
 
 interface Material {
   id: string;
@@ -33,6 +35,14 @@ const Collection = () => {
   const [showViewer, setShowViewer] = useState(false);
   const [materialViewerOpen, setMaterialViewerOpen] = useState(false);
   const [materialViewerIndex, setMaterialViewerIndex] = useState(0);
+  const [uploadItems, setUploadItems] = useState<Array<{
+    id: string;
+    file: File;
+    preview: string;
+    status: 'pending' | 'compressing' | 'uploading' | 'complete' | 'error';
+    progress: number;
+    error?: string;
+  }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -103,6 +113,27 @@ const Collection = () => {
     if (!files || files.length === 0 || !id) return;
 
     setUploading(true);
+
+    // Create upload items with previews
+    const items = await Promise.all(
+      Array.from(files).map(async (file) => {
+        if (!file.type.startsWith('image/')) {
+          return null;
+        }
+        const preview = await createImagePreview(file);
+        return {
+          id: `${Date.now()}-${Math.random()}`,
+          file,
+          preview,
+          status: 'pending' as const,
+          progress: 0,
+        };
+      })
+    );
+
+    const validItems = items.filter((item): item is NonNullable<typeof item> => item !== null);
+    setUploadItems(validItems);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
@@ -110,45 +141,77 @@ const Collection = () => {
       const userId = session.user.id;
       let uploadedCount = 0;
 
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith('image/')) {
-          toast({
-            title: 'Invalid file type',
-            description: `${file.name} is not an image`,
-            variant: 'destructive',
+      for (const item of validItems) {
+        try {
+          // Update status to compressing
+          setUploadItems(prev => 
+            prev.map(u => u.id === item.id ? { ...u, status: 'compressing' as const } : u)
+          );
+
+          // Compress image
+          const compressedFile = await compressImage(item.file, {
+            onProgress: (progress) => {
+              setUploadItems(prev => 
+                prev.map(u => u.id === item.id ? { ...u, progress: progress * 0.3 } : u)
+              );
+            }
           });
-          continue;
+
+          // Update status to uploading
+          setUploadItems(prev => 
+            prev.map(u => u.id === item.id ? { ...u, status: 'uploading' as const, progress: 30 } : u)
+          );
+
+          const timestamp = Date.now();
+          const filePath = `${userId}/${id}/${timestamp}-${item.file.name}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('study-materials')
+            .upload(filePath, compressedFile);
+
+          if (uploadError) throw uploadError;
+
+          // Update progress
+          setUploadItems(prev => 
+            prev.map(u => u.id === item.id ? { ...u, progress: 70 } : u)
+          );
+
+          const { error: insertError } = await supabase
+            .from('materials')
+            .insert({
+              collection_id: id,
+              file_name: item.file.name,
+              mime_type: item.file.type,
+              file_size: compressedFile.size,
+              storage_path: filePath,
+            });
+
+          if (insertError) throw insertError;
+
+          // Update status to complete
+          setUploadItems(prev => 
+            prev.map(u => u.id === item.id ? { ...u, status: 'complete' as const, progress: 100 } : u)
+          );
+
+          uploadedCount++;
+        } catch (error: any) {
+          setUploadItems(prev => 
+            prev.map(u => u.id === item.id ? { 
+              ...u, 
+              status: 'error' as const,
+              error: error.message || 'Upload failed'
+            } : u)
+          );
         }
-
-        const timestamp = Date.now();
-        const filePath = `${userId}/${id}/${timestamp}-${file.name}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('study-materials')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { error: insertError } = await supabase
-          .from('materials')
-          .insert({
-            collection_id: id,
-            file_name: file.name,
-            mime_type: file.type,
-            file_size: file.size,
-            storage_path: filePath,
-          });
-
-        if (insertError) throw insertError;
-        uploadedCount++;
       }
 
-      toast({
-        title: 'Upload successful',
-        description: `${uploadedCount} file${uploadedCount === 1 ? '' : 's'} uploaded`,
-      });
-
-      await load();
+      if (uploadedCount > 0) {
+        toast({
+          title: 'Upload successful',
+          description: `${uploadedCount} file${uploadedCount === 1 ? '' : 's'} uploaded and optimized`,
+        });
+        await load();
+      }
     } catch (e: any) {
       console.error('Upload failed', e);
       toast({
@@ -160,6 +223,17 @@ const Collection = () => {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleCancelUpload = (id: string) => {
+    setUploadItems(prev => prev.filter(item => item.id !== id));
+    if (uploadItems.length === 1) {
+      setUploading(false);
+    }
+  };
+
+  const handleCloseUploadProgress = () => {
+    setUploadItems([]);
   };
 
   const handleGenerateQuiz = async () => {
@@ -307,17 +381,20 @@ const Collection = () => {
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle>Materials</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {uploading ? 'Uploading…' : 'Upload'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className="h-12 md:h-10"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <Camera className="h-5 w-5 md:h-4 md:w-4 mr-2" />
+                    {uploading ? 'Uploading…' : 'Scan Page'}
+                  </Button>
+                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -449,6 +526,14 @@ const Collection = () => {
           open={materialViewerOpen}
           onClose={() => setMaterialViewerOpen(false)}
         />
+
+        {uploadItems.length > 0 && (
+          <UploadProgress 
+            uploads={uploadItems}
+            onCancel={handleCancelUpload}
+            onClose={handleCloseUploadProgress}
+          />
+        )}
       </main>
     </div>
   );
