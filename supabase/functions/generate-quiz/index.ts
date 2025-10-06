@@ -24,10 +24,10 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch collection and materials
+    // Fetch collection
     const { data: collection, error: collectionError } = await supabase
       .from('collections')
-      .select('*, materials(*)')
+      .select('*')
       .eq('id', collectionId)
       .single();
 
@@ -35,23 +35,21 @@ serve(async (req) => {
       throw new Error('Collection not found');
     }
 
-    if (!collection.materials || collection.materials.length === 0) {
-      throw new Error('No materials found in collection');
+    // Check if we have analyzed content in knowledge base
+    const { data: analyses, error: analysisError } = await supabase
+      .from('material_analysis')
+      .select('*')
+      .eq('collection_id', collectionId)
+      .order('page_number');
+
+    if (analysisError) {
+      console.error('Error fetching analysis:', analysisError);
+      throw new Error('Failed to fetch material analysis');
     }
 
-    // Get signed URLs for images (bucket is private)
-    const imageUrls = await Promise.all(
-      collection.materials.map(async (material: any) => {
-        const { data, error } = await supabase.storage
-          .from('study-materials')
-          .createSignedUrl(material.storage_path, 3600);
-        if (error) {
-          console.error('Error creating signed URL:', error);
-          throw new Error(`Failed to access material: ${material.file_name}`);
-        }
-        return data.signedUrl;
-      })
-    );
+    if (!analyses || analyses.length === 0) {
+      throw new Error('No analyzed materials found. Please run "Extract Content" first.');
+    }
 
     // Call Lovable AI with Gemini to analyze images and generate quiz
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -67,15 +65,8 @@ serve(async (req) => {
             role: 'system',
             content: `You are an experienced teacher creating exam-style quiz questions. Analyze study materials deeply and create intelligent, pedagogically sound questions.
 
-CONTENT ANALYSIS (analyze before generating):
-1. Identify 5-7 major topics/themes in the materials
-2. Note concepts that appear multiple times (high exam probability)
-3. Identify fundamental concepts vs. supporting details
-4. Look for visual emphasis (diagrams, boxes, bold text) as exam-worthy markers
-5. Cross-reference related concepts across different pages
-
 QUESTION GENERATION STRATEGY:
-- Analyze material volume: Generate 1 question per 1.5-2 pages of content (e.g., 19 pages → 12-15 questions)
+- Generate 1 question per 1.5-2 pages of content (e.g., 19 pages → 12-15 questions)
 - Minimum 10 questions, maximum 20 questions
 - Distribute across cognitive levels (Bloom's Taxonomy):
   * 30% Remember/Recall (basic definitions, facts, terminology)
@@ -125,16 +116,25 @@ Make questions clear, educational, and exam-realistic. Ensure comprehensive cove
           },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Create a quiz from these study materials about: ${collection.title}. ${collection.description || ''}`
-              },
-              ...imageUrls.map((url: string) => ({
-                type: 'image_url',
-                image_url: { url }
-              }))
-            ]
+            content: `Create a quiz from the following pre-analyzed study materials about: ${collection.title}. ${collection.description || ''}
+
+KNOWLEDGE BASE (${analyses.length} pages):
+
+${analyses.map((analysis, idx) => `
+─── Page ${analysis.page_number || idx + 1} ───
+Topics: ${analysis.major_topics.join(', ')}
+Key Concepts: ${analysis.key_concepts.join(', ')}
+
+Content:
+${analysis.extracted_text.substring(0, 800)}${analysis.extracted_text.length > 800 ? '...' : ''}
+
+${Object.keys(analysis.definitions).length > 0 ? `Definitions: ${JSON.stringify(analysis.definitions)}` : ''}
+${analysis.formulas?.length > 0 ? `Formulas: ${analysis.formulas.join(', ')}` : ''}
+${analysis.emphasis_markers?.length > 0 ? `Important: ${analysis.emphasis_markers.join('; ')}` : ''}
+${analysis.visual_elements?.length > 0 ? `Visuals: ${analysis.visual_elements.join('; ')}` : ''}
+`).join('\n\n')}
+
+Create a comprehensive quiz covering all major topics with proper distribution across Bloom's taxonomy levels.`
           }
         ],
         response_format: { type: 'json_object' }

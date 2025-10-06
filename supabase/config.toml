@@ -2,3 +2,6 @@ project_id = "yzawvoduiluouozkmxzv"
 
 [functions.generate-quiz]
 verify_jwt = false
+
+[functions.analyze-materials]
+verify_jwt = false

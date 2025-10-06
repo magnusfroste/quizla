@@ -175,6 +175,75 @@ export type Database = {
           },
         ]
       }
+      material_analysis: {
+        Row: {
+          analyzed_at: string | null
+          collection_id: string
+          created_at: string | null
+          definitions: Json | null
+          emphasis_markers: string[] | null
+          extracted_text: string
+          formulas: string[] | null
+          id: string
+          is_foundational: boolean | null
+          key_concepts: string[]
+          major_topics: string[]
+          material_id: string
+          page_number: number | null
+          token_count: number | null
+          visual_elements: string[] | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          collection_id: string
+          created_at?: string | null
+          definitions?: Json | null
+          emphasis_markers?: string[] | null
+          extracted_text: string
+          formulas?: string[] | null
+          id?: string
+          is_foundational?: boolean | null
+          key_concepts?: string[]
+          major_topics?: string[]
+          material_id: string
+          page_number?: number | null
+          token_count?: number | null
+          visual_elements?: string[] | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          collection_id?: string
+          created_at?: string | null
+          definitions?: Json | null
+          emphasis_markers?: string[] | null
+          extracted_text?: string
+          formulas?: string[] | null
+          id?: string
+          is_foundational?: boolean | null
+          key_concepts?: string[]
+          major_topics?: string[]
+          material_id?: string
+          page_number?: number | null
+          token_count?: number | null
+          visual_elements?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_analysis_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_analysis_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: true
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           collection_id: string

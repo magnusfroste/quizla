@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Image as ImageIcon, Sparkles, ArrowLeft, Upload } from "lucide-react";
+import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download } from "lucide-react";
+import { StudyMaterialViewer } from "@/components/StudyMaterialViewer";
+import { generateStudyMaterialPDF } from "@/lib/pdfExport";
 
 interface Material {
   id: string;
@@ -22,8 +24,11 @@ const Collection = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [collection, setCollection] = useState<any | null>(null);
   const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [analyses, setAnalyses] = useState<any[]>([]);
+  const [showViewer, setShowViewer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -59,6 +64,15 @@ const Collection = () => {
         .order('created_at', { ascending: false });
       
       setQuizzes(quizzesData || []);
+
+      // Load material analyses
+      const { data: analysesData } = await supabase
+        .from('material_analysis')
+        .select('*')
+        .eq('collection_id', id)
+        .order('page_number');
+      
+      setAnalyses(analysesData || []);
 
       // Basic SEO without extra deps
       if (data) {
@@ -146,6 +160,17 @@ const Collection = () => {
 
   const handleGenerateQuiz = async () => {
     if (!id) return;
+    
+    // Check if materials have been analyzed
+    if (analyses.length === 0) {
+      toast({
+        title: 'Content extraction required',
+        description: 'Please extract content from materials first before generating a quiz.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-quiz', {
@@ -156,7 +181,7 @@ const Collection = () => {
 
       toast({
         title: 'Quiz generated',
-        description: `Created ${data?.quiz?.questionCount ?? 0} questions for this collection.`,
+        description: `Created ${data?.quiz?.questionCount ?? 0} questions using knowledge base.`,
       });
 
       // Reload to fetch the new quiz
@@ -167,6 +192,68 @@ const Collection = () => {
       toast({ title: 'AI error', description: msg, variant: 'destructive' });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleAnalyzeMaterials = async () => {
+    if (!id) return;
+    setAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-materials', {
+        body: { collectionId: id },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Content extraction complete',
+        description: `Analyzed ${data?.analyzed_count ?? 0} materials successfully.`,
+      });
+
+      // Reload to fetch the analyses
+      await load();
+    } catch (e: any) {
+      console.error('analyze-materials failed', e);
+      const msg = e?.message || 'Failed to analyze materials.';
+      toast({ title: 'Analysis error', description: msg, variant: 'destructive' });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (analyses.length === 0) {
+      toast({
+        title: 'No content to export',
+        description: 'Please extract content first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: 'Generating PDF',
+        description: 'Please wait...',
+      });
+
+      await generateStudyMaterialPDF(
+        analyses,
+        collection.title,
+        collection.description
+      );
+
+      toast({
+        title: 'PDF exported',
+        description: 'Your study materials have been downloaded.',
+      });
+    } catch (e: any) {
+      console.error('PDF export failed', e);
+      toast({
+        title: 'Export failed',
+        description: e?.message || 'Could not generate PDF',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -259,15 +346,63 @@ const Collection = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Actions</CardTitle>
+                <CardTitle>Knowledge Base</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" onClick={handleGenerateQuiz} disabled={generating || materialCount === 0}>
+                <Button 
+                  className="w-full"
+                  onClick={handleAnalyzeMaterials}
+                  disabled={analyzing || materialCount === 0}
+                >
+                  <Brain className="h-4 w-4 mr-2" />
+                  {analyzing ? 'Analyzing...' : 'Extract Content'}
+                </Button>
+
+                {analyses.length > 0 && (
+                  <>
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowViewer(true)}
+                    >
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      View Study Materials
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleExportPDF}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </Button>
+                  </>
+                )}
+
+                {materialCount === 0 && (
+                  <p className="text-xs text-muted-foreground">Add materials to extract content.</p>
+                )}
+
+                {analyses.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    ✓ {analyses.length} page{analyses.length === 1 ? '' : 's'} analyzed
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Generate Quiz</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full" onClick={handleGenerateQuiz} disabled={generating || analyses.length === 0}>
                   <Sparkles className="h-4 w-4 mr-2" />
                   {generating ? 'Generating…' : 'Generate Quiz'}
                 </Button>
-                {materialCount === 0 && (
-                  <p className="text-xs text-muted-foreground">Add at least one material to enable quiz generation.</p>
+                {analyses.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Extract content first to enable quiz generation.</p>
                 )}
               </CardContent>
             </Card>
@@ -298,6 +433,12 @@ const Collection = () => {
             )}
           </div>
         </div>
+
+        <StudyMaterialViewer 
+          analyses={analyses}
+          open={showViewer}
+          onClose={() => setShowViewer(false)}
+        />
       </main>
     </div>
   );
