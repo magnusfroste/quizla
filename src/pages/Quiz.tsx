@@ -49,6 +49,7 @@ const Quiz = () => {
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
+  const [shuffledAnswers, setShuffledAnswers] = useState<Record<string, string[]>>({});
 
   // Mobile swipe navigation
   useTouchSwipe({
@@ -83,6 +84,14 @@ const Quiz = () => {
 
       setQuiz(quizData);
       setQuestions(questionsData || []);
+
+      // Pre-shuffle all answers once
+      const shuffled: Record<string, string[]> = {};
+      (questionsData || []).forEach((q) => {
+        const all = [q.correct_answer, ...q.wrong_answers];
+        shuffled[q.id] = all.sort(() => Math.random() - 0.5);
+      });
+      setShuffledAnswers(shuffled);
 
       // Create attempt
       const { data: { session } } = await supabase.auth.getSession();
@@ -172,10 +181,6 @@ const Quiz = () => {
     }
   };
 
-  const getShuffledAnswers = (question: Question) => {
-    const all = [question.correct_answer, ...question.wrong_answers];
-    return all.sort(() => Math.random() - 0.5);
-  };
 
   if (loading) {
     return (
@@ -426,7 +431,7 @@ const Quiz = () => {
             <CardTitle className="text-xl">{currentQuestion.question_text}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {getShuffledAnswers(currentQuestion).map((answer, idx) => (
+            {(shuffledAnswers[currentQuestion.id] || []).map((answer, idx) => (
               <button
                 key={idx}
                 onClick={() => handleAnswer(answer)}
