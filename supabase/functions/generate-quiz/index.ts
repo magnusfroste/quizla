@@ -65,23 +65,63 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a quiz generator. Analyze study materials and create engaging multiple-choice questions.
-            
-Return a JSON object with this exact structure:
+            content: `You are an experienced teacher creating exam-style quiz questions. Analyze study materials deeply and create intelligent, pedagogically sound questions.
+
+CONTENT ANALYSIS (analyze before generating):
+1. Identify 5-7 major topics/themes in the materials
+2. Note concepts that appear multiple times (high exam probability)
+3. Identify fundamental concepts vs. supporting details
+4. Look for visual emphasis (diagrams, boxes, bold text) as exam-worthy markers
+5. Cross-reference related concepts across different pages
+
+QUESTION GENERATION STRATEGY:
+- Analyze material volume: Generate 1 question per 1.5-2 pages of content (e.g., 19 pages → 12-15 questions)
+- Minimum 10 questions, maximum 20 questions
+- Distribute across cognitive levels (Bloom's Taxonomy):
+  * 30% Remember/Recall (basic definitions, facts, terminology)
+  * 40% Understand/Apply (problem-solving, method selection, real scenarios)
+  * 20% Analyze (compare/contrast, explain why, relationships)
+  * 10% Evaluate/Create (higher-order thinking, synthesis)
+
+WRONG ANSWERS MUST BE INTELLIGENT:
+- Base wrong answers on common student misconceptions
+- Make them plausible and tempting, not obviously wrong
+- Test understanding, not just memory
+- Example: If correct is "compound", wrong answers should be "mixture", "element", "solution" (NOT "banana" or "Tuesday")
+
+EXAM INTELLIGENCE:
+- Flag concepts mentioned multiple times as "very_high" exam likelihood
+- Identify foundational building blocks as "high" exam likelihood
+- Note visual emphasis (diagrams, definitions in boxes) as exam-worthy
+- Mark supporting details as "medium" or "low" exam likelihood
+
+Return JSON with this EXACT structure:
 {
-  "title": "Quiz Title",
-  "description": "Brief description",
+  "title": "Descriptive Quiz Title",
+  "description": "Brief overview of topics covered",
+  "content_analysis": {
+    "major_topics": ["Topic 1", "Topic 2", ...],
+    "total_pages_analyzed": number,
+    "recommended_question_count": number
+  },
   "questions": [
     {
-      "question": "Question text?",
-      "correct_answer": "Correct answer",
-      "wrong_answers": ["Wrong 1", "Wrong 2", "Wrong 3"],
-      "explanation": "Why this is correct"
+      "question": "Clear, specific question text?",
+      "correct_answer": "The correct answer",
+      "wrong_answers": ["Plausible misconception 1", "Plausible misconception 2", "Plausible misconception 3"],
+      "explanation": "Why this is correct, with teaching insight",
+      "difficulty": "easy" | "medium" | "hard",
+      "bloom_level": "remember" | "understand" | "apply" | "analyze" | "evaluate" | "create",
+      "question_type": "recall" | "application" | "analysis" | "synthesis",
+      "topic_category": "Main topic this tests",
+      "exam_likelihood": "low" | "medium" | "high" | "very_high",
+      "exam_tip": "Why this concept is important for exams",
+      "page_references": ["Page X", "Page Y"]
     }
   ]
 }
 
-Create 5-10 questions of varying difficulty. Make questions clear and educational.`
+Make questions clear, educational, and exam-realistic. Ensure comprehensive coverage of all major topics.`
           },
           {
             role: 'user',
@@ -133,14 +173,22 @@ Create 5-10 questions of varying difficulty. Make questions clear and educationa
       throw new Error('Failed to create quiz');
     }
 
-    // Create questions
+    // Create questions with enhanced metadata
     const questionsToInsert = quizData.questions.map((q: any, index: number) => ({
       quiz_id: quiz.id,
       question_text: q.question,
       correct_answer: q.correct_answer,
       wrong_answers: q.wrong_answers,
       explanation: q.explanation,
-      order_index: index
+      order_index: index,
+      // Enhanced metadata (optional fields, backward compatible)
+      difficulty_level: q.difficulty || null,
+      bloom_level: q.bloom_level || null,
+      question_type: q.question_type || null,
+      topic_category: q.topic_category || null,
+      exam_likelihood: q.exam_likelihood || null,
+      exam_tip: q.exam_tip || null,
+      page_references: q.page_references || null
     }));
 
     const { error: questionsError } = await supabase

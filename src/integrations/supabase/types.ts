@@ -242,33 +242,54 @@ export type Database = {
       }
       questions: {
         Row: {
+          bloom_level: string | null
           correct_answer: string
           created_at: string
+          difficulty_level: string | null
+          exam_likelihood: string | null
+          exam_tip: string | null
           explanation: string | null
           id: string
           order_index: number
+          page_references: string[] | null
           question_text: string
+          question_type: string | null
           quiz_id: string
+          topic_category: string | null
           wrong_answers: string[]
         }
         Insert: {
+          bloom_level?: string | null
           correct_answer: string
           created_at?: string
+          difficulty_level?: string | null
+          exam_likelihood?: string | null
+          exam_tip?: string | null
           explanation?: string | null
           id?: string
           order_index: number
+          page_references?: string[] | null
           question_text: string
+          question_type?: string | null
           quiz_id: string
+          topic_category?: string | null
           wrong_answers: string[]
         }
         Update: {
+          bloom_level?: string | null
           correct_answer?: string
           created_at?: string
+          difficulty_level?: string | null
+          exam_likelihood?: string | null
+          exam_tip?: string | null
           explanation?: string | null
           id?: string
           order_index?: number
+          page_references?: string[] | null
           question_text?: string
+          question_type?: string | null
           quiz_id?: string
+          topic_category?: string | null
           wrong_answers?: string[]
         }
         Relationships: [

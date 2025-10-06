@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 
@@ -13,6 +14,14 @@ interface Question {
   wrong_answers: string[];
   explanation: string | null;
   order_index: number;
+  // Enhanced metadata (optional)
+  difficulty_level?: string | null;
+  bloom_level?: string | null;
+  question_type?: string | null;
+  topic_category?: string | null;
+  exam_likelihood?: string | null;
+  exam_tip?: string | null;
+  page_references?: string[] | null;
 }
 
 interface Quiz {
@@ -196,13 +205,50 @@ const Quiz = () => {
               <CardTitle className="text-2xl">Your Score</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center">
-                <p className="text-5xl font-bold text-primary mb-2">
-                  {score} / {questions.length}
-                </p>
-                <p className="text-muted-foreground">
-                  {((score || 0) / questions.length * 100).toFixed(0)}% correct
-                </p>
+              <div className="text-center space-y-4">
+                <div>
+                  <p className="text-5xl font-bold text-primary mb-2">
+                    {score} / {questions.length}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {((score || 0) / questions.length * 100).toFixed(0)}% correct
+                  </p>
+                </div>
+                
+                {/* Performance by topic */}
+                {(() => {
+                  const topicScores: Record<string, { correct: number; total: number }> = {};
+                  questions.forEach((q, idx) => {
+                    const topic = q.topic_category || 'General';
+                    if (!topicScores[topic]) topicScores[topic] = { correct: 0, total: 0 };
+                    topicScores[topic].total++;
+                    if (answers[q.id] === q.correct_answer) topicScores[topic].correct++;
+                  });
+                  
+                  return Object.keys(topicScores).length > 1 ? (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm font-medium text-muted-foreground mb-3">Performance by Topic:</p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {Object.entries(topicScores).map(([topic, scores]) => {
+                          const percentage = Math.round((scores.correct / scores.total) * 100);
+                          return (
+                            <Badge 
+                              key={topic} 
+                              variant="outline" 
+                              className={`text-xs ${
+                                percentage >= 80 ? 'bg-green-50 border-green-300' :
+                                percentage >= 60 ? 'bg-yellow-50 border-yellow-300' :
+                                'bg-red-50 border-red-300'
+                              }`}
+                            >
+                              {topic}: {scores.correct}/{scores.total} ({percentage}%)
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </CardContent>
           </Card>
@@ -222,7 +268,31 @@ const Quiz = () => {
                         <XCircle className="h-5 w-5 text-destructive mt-0.5" />
                       )}
                       <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-1">Question {idx + 1}</p>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="text-sm text-muted-foreground">Question {idx + 1}</p>
+                          {question.topic_category && (
+                            <Badge variant="outline" className="text-xs">
+                              {question.topic_category}
+                            </Badge>
+                          )}
+                          {question.difficulty_level && (
+                            <Badge 
+                              variant="secondary" 
+                              className={`text-xs ${
+                                question.difficulty_level === 'easy' ? 'bg-green-100 text-green-700' : 
+                                question.difficulty_level === 'hard' ? 'bg-red-100 text-red-700' : 
+                                'bg-yellow-100 text-yellow-700'
+                              }`}
+                            >
+                              {question.difficulty_level}
+                            </Badge>
+                          )}
+                          {question.exam_likelihood === 'very_high' && (
+                            <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+                              🎯 High Exam Probability
+                            </Badge>
+                          )}
+                        </div>
                         <CardTitle className="text-lg">{question.question_text}</CardTitle>
                       </div>
                     </div>
@@ -245,6 +315,19 @@ const Quiz = () => {
                         <p className="text-sm font-medium mb-1">Explanation:</p>
                         <p className="text-sm text-muted-foreground">{question.explanation}</p>
                       </div>
+                    )}
+                    {question.exam_tip && (
+                      <div className="bg-purple-50 rounded-md p-3 border border-purple-200">
+                        <p className="text-sm">
+                          <span className="font-medium">💡 Exam Tip:</span>{' '}
+                          <span className="text-purple-900">{question.exam_tip}</span>
+                        </p>
+                      </div>
+                    )}
+                    {question.page_references && question.page_references.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        📖 Reference: {question.page_references.join(', ')}
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -299,6 +382,30 @@ const Quiz = () => {
 
         <Card className="mb-6">
           <CardHeader>
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              {currentQuestion.topic_category && (
+                <Badge variant="outline" className="text-xs">
+                  📚 {currentQuestion.topic_category}
+                </Badge>
+              )}
+              {currentQuestion.difficulty_level && (
+                <Badge 
+                  variant="secondary" 
+                  className={`text-xs ${
+                    currentQuestion.difficulty_level === 'easy' ? 'bg-green-100 text-green-700' : 
+                    currentQuestion.difficulty_level === 'hard' ? 'bg-red-100 text-red-700' : 
+                    'bg-yellow-100 text-yellow-700'
+                  }`}
+                >
+                  {currentQuestion.difficulty_level}
+                </Badge>
+              )}
+              {currentQuestion.exam_likelihood === 'very_high' && (
+                <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+                  🎯 High Exam Probability
+                </Badge>
+              )}
+            </div>
             <CardTitle className="text-xl">{currentQuestion.question_text}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
