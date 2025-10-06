@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Image as ImageIcon, Sparkles, ArrowLeft } from "lucide-react";
+import { Image as ImageIcon, Sparkles, ArrowLeft, Upload } from "lucide-react";
 
 interface Material {
   id: string;
@@ -21,7 +21,9 @@ const Collection = () => {
 
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [collection, setCollection] = useState<any | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -67,6 +69,70 @@ const Collection = () => {
   };
 
   const materialCount = useMemo(() => collection?.materials?.length || 0, [collection]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !id) return;
+
+    setUploading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const userId = session.user.id;
+      let uploadedCount = 0;
+
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) {
+          toast({
+            title: 'Invalid file type',
+            description: `${file.name} is not an image`,
+            variant: 'destructive',
+          });
+          continue;
+        }
+
+        const timestamp = Date.now();
+        const filePath = `${userId}/${id}/${timestamp}-${file.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('study-materials')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { error: insertError } = await supabase
+          .from('materials')
+          .insert({
+            collection_id: id,
+            file_name: file.name,
+            mime_type: file.type,
+            file_size: file.size,
+            storage_path: filePath,
+          });
+
+        if (insertError) throw insertError;
+        uploadedCount++;
+      }
+
+      toast({
+        title: 'Upload successful',
+        description: `${uploadedCount} file${uploadedCount === 1 ? '' : 's'} uploaded`,
+      });
+
+      await load();
+    } catch (e: any) {
+      console.error('Upload failed', e);
+      toast({
+        title: 'Upload failed',
+        description: e?.message || 'Could not upload files',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleGenerateQuiz = async () => {
     if (!id) return;
@@ -137,8 +203,26 @@ const Collection = () => {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle>Materials</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploading ? 'Uploading…' : 'Upload'}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  capture="environment"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </CardHeader>
               <CardContent>
                 {collection.materials?.length ? (
