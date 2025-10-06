@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { MobileQuizNavigation } from "@/components/MobileQuizNavigation";
 import { useTouchSwipe } from "@/hooks/use-touch-swipe";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -50,6 +50,7 @@ const Quiz = () => {
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [shuffledAnswers, setShuffledAnswers] = useState<Record<string, string[]>>({});
+  const [scoreSummaryExpanded, setScoreSummaryExpanded] = useState(false);
 
   // Mobile swipe navigation
   useTouchSwipe({
@@ -216,58 +217,83 @@ const Quiz = () => {
         </header>
 
         <main className="container mx-auto px-4 py-8 max-w-3xl">
-          {/* Sticky Score Card on Mobile */}
+          {/* Collapsible Score Summary on Mobile */}
           <Card className="mb-6 md:mb-6 sticky top-16 md:relative z-40 md:z-auto">
-            <CardHeader>
-              <CardTitle className="text-xl md:text-2xl">Your Score</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center space-y-4">
-                <div>
-                  <p className="text-4xl md:text-5xl font-bold text-primary mb-2">
-                    {score} / {questions.length}
-                  </p>
-                  <p className="text-sm md:text-base text-muted-foreground">
-                    {((score || 0) / questions.length * 100).toFixed(0)}% correct
-                  </p>
-                </div>
-                
-                {/* Performance by topic */}
-                {(() => {
-                  const topicScores: Record<string, { correct: number; total: number }> = {};
-                  questions.forEach((q, idx) => {
-                    const topic = q.topic_category || 'General';
-                    if (!topicScores[topic]) topicScores[topic] = { correct: 0, total: 0 };
-                    topicScores[topic].total++;
-                    if (answers[q.id] === q.correct_answer) topicScores[topic].correct++;
-                  });
-                  
-                  return Object.keys(topicScores).length > 1 ? (
-                    <div className="pt-4 border-t">
-                      <p className="text-sm font-medium text-muted-foreground mb-3">Performance by Topic:</p>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {Object.entries(topicScores).map(([topic, scores]) => {
-                          const percentage = Math.round((scores.correct / scores.total) * 100);
-                          return (
-                            <Badge 
-                              key={topic} 
-                              variant="outline" 
-                              className={`text-xs ${
-                                percentage >= 80 ? 'bg-green-50 border-green-300' :
-                                percentage >= 60 ? 'bg-yellow-50 border-yellow-300' :
-                                'bg-red-50 border-red-300'
-                              }`}
-                            >
-                              {topic}: {scores.correct}/{scores.total} ({percentage}%)
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
+            <CardHeader 
+              className="cursor-pointer md:cursor-default"
+              onClick={() => isMobile && setScoreSummaryExpanded(!scoreSummaryExpanded)}
+            >
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl md:text-2xl">Your Score</CardTitle>
+                {isMobile && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setScoreSummaryExpanded(!scoreSummaryExpanded);
+                    }}
+                  >
+                    {scoreSummaryExpanded ? (
+                      <ChevronUp className="h-5 w-5" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5" />
+                    )}
+                  </Button>
+                )}
               </div>
-            </CardContent>
+              {/* Always show score summary */}
+              <div className="text-center pt-4">
+                <p className="text-4xl md:text-5xl font-bold text-primary mb-2">
+                  {score} / {questions.length}
+                </p>
+                <p className="text-sm md:text-base text-muted-foreground">
+                  {((score || 0) / questions.length * 100).toFixed(0)}% correct
+                </p>
+              </div>
+            </CardHeader>
+            
+            {/* Collapsible details on mobile, always visible on desktop */}
+            {(scoreSummaryExpanded || !isMobile) && (
+              <CardContent>
+                <div className="text-center space-y-4">
+                  {/* Performance by topic */}
+                  {(() => {
+                    const topicScores: Record<string, { correct: number; total: number }> = {};
+                    questions.forEach((q, idx) => {
+                      const topic = q.topic_category || 'General';
+                      if (!topicScores[topic]) topicScores[topic] = { correct: 0, total: 0 };
+                      topicScores[topic].total++;
+                      if (answers[q.id] === q.correct_answer) topicScores[topic].correct++;
+                    });
+                    
+                    return Object.keys(topicScores).length > 1 ? (
+                      <div className="pt-4 border-t">
+                        <p className="text-sm font-medium text-muted-foreground mb-3">Performance by Topic:</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {Object.entries(topicScores).map(([topic, scores]) => {
+                            const percentage = Math.round((scores.correct / scores.total) * 100);
+                            return (
+                              <Badge 
+                                key={topic} 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  percentage >= 80 ? 'bg-green-50 border-green-300' :
+                                  percentage >= 60 ? 'bg-yellow-50 border-yellow-300' :
+                                  'bg-red-50 border-red-300'
+                                }`}
+                              >
+                                {topic}: {scores.correct}/{scores.total} ({percentage}%)
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              </CardContent>
+            )}
           </Card>
 
           <div className="space-y-4">
