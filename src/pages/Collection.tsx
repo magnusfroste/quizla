@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download } from "lucide-react";
 import { StudyMaterialViewer } from "@/components/StudyMaterialViewer";
+import { MaterialGallery } from "@/components/MaterialGallery";
+import { MaterialViewer } from "@/components/MaterialViewer";
 import { generateStudyMaterialPDF } from "@/lib/pdfExport";
 
 interface Material {
@@ -29,6 +31,8 @@ const Collection = () => {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [analyses, setAnalyses] = useState<any[]>([]);
   const [showViewer, setShowViewer] = useState(false);
+  const [materialViewerOpen, setMaterialViewerOpen] = useState(false);
+  const [materialViewerIndex, setMaterialViewerIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -326,16 +330,14 @@ const Collection = () => {
               </CardHeader>
               <CardContent>
                 {collection.materials?.length ? (
-                  <ul className="space-y-2">
-                    {collection.materials.map((m: Material) => (
-                      <li key={m.id} className="flex items-center justify-between border rounded-md p-3">
-                        <div>
-                          <p className="font-medium">{m.file_name}</p>
-                          <p className="text-xs text-muted-foreground">{m.mime_type || 'file'} • {m.file_size ? `${(m.file_size/1024/1024).toFixed(2)} MB` : 'size unknown'}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <MaterialGallery 
+                    materials={collection.materials}
+                    analyses={analyses}
+                    onMaterialClick={(material, index) => {
+                      setMaterialViewerIndex(index);
+                      setMaterialViewerOpen(true);
+                    }}
+                  />
                 ) : (
                   <p className="text-muted-foreground">No materials yet. Add files to generate a better quiz.</p>
                 )}
@@ -438,6 +440,14 @@ const Collection = () => {
           analyses={analyses}
           open={showViewer}
           onClose={() => setShowViewer(false)}
+        />
+
+        <MaterialViewer 
+          materials={collection.materials || []}
+          analyses={analyses}
+          initialIndex={materialViewerIndex}
+          open={materialViewerOpen}
+          onClose={() => setMaterialViewerOpen(false)}
         />
       </main>
     </div>
