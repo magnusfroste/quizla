@@ -318,7 +318,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_collection_share_access: {
+        Args: { _collection_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_collection_owner: {
+        Args: { _collection_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
