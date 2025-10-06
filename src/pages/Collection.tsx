@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download, Camera } from "lucide-react";
+import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download, Camera, PlayCircle } from "lucide-react";
 import { StudyMaterialViewer } from "@/components/StudyMaterialViewer";
 import { MaterialGallery } from "@/components/MaterialGallery";
 import { MaterialViewer } from "@/components/MaterialViewer";
@@ -367,6 +367,35 @@ const Collection = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
+            {quizzes.length > 0 && (
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PlayCircle className="h-5 w-5 text-primary" />
+                    Available Quizzes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {quizzes.map((quiz) => (
+                    <div key={quiz.id} className="border rounded-xl p-6 bg-card hover:shadow-md transition-shadow">
+                      <h3 className="font-semibold text-lg mb-2">{quiz.title}</h3>
+                      {quiz.description && (
+                        <p className="text-sm text-muted-foreground mb-4">{quiz.description}</p>
+                      )}
+                      <Button 
+                        size="lg"
+                        className="w-full h-12 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                        onClick={() => navigate(`/quiz/${quiz.id}`)}
+                      >
+                        <PlayCircle className="h-5 w-5 mr-2" />
+                        Start Learning
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Overview</CardTitle>
@@ -485,31 +514,6 @@ const Collection = () => {
                 )}
               </CardContent>
             </Card>
-
-            {quizzes.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Available Quizzes</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {quizzes.map((quiz) => (
-                    <div key={quiz.id} className="border rounded-lg p-4">
-                      <h3 className="font-semibold mb-1">{quiz.title}</h3>
-                      {quiz.description && (
-                        <p className="text-sm text-muted-foreground mb-3">{quiz.description}</p>
-                      )}
-                      <Button 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                      >
-                        Take Quiz
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
 
