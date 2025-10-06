@@ -49,9 +49,10 @@ const Dashboard = () => {
       if (error) throw error;
       setCollections(data || []);
     } catch (error: any) {
+      console.error('Error loading collections:', error);
       toast({
         title: "Error loading collections",
-        description: error.message,
+        description: error?.message || "Failed to load collections. Please try again.",
         variant: "destructive",
       });
     } finally {

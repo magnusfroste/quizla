@@ -39,13 +39,19 @@ serve(async (req) => {
       throw new Error('No materials found in collection');
     }
 
-    // Get public URLs for images
-    const imageUrls = collection.materials.map((material: any) => {
-      const { data } = supabase.storage
-        .from('study-materials')
-        .getPublicUrl(material.storage_path);
-      return data.publicUrl;
-    });
+    // Get signed URLs for images (bucket is private)
+    const imageUrls = await Promise.all(
+      collection.materials.map(async (material: any) => {
+        const { data, error } = await supabase.storage
+          .from('study-materials')
+          .createSignedUrl(material.storage_path, 3600);
+        if (error) {
+          console.error('Error creating signed URL:', error);
+          throw new Error(`Failed to access material: ${material.file_name}`);
+        }
+        return data.signedUrl;
+      })
+    );
 
     // Call Lovable AI with Gemini to analyze images and generate quiz
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -97,7 +103,14 @@ Create 5-10 questions of varying difficulty. Make questions clear and educationa
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI Gateway error:', errorText);
+      console.error('AI Gateway error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a few moments.');
+      }
+      if (response.status === 402) {
+        throw new Error('AI credits depleted. Please add credits to your workspace.');
+      }
       throw new Error(`AI generation failed: ${response.status}`);
     }
 
