@@ -177,7 +177,33 @@ export function ShareQuizDialog({ open, onOpenChange, quizId, quizTitle, isPubli
     }
   };
 
-  const copyShareLink = () => {
+  const copyShareLink = async () => {
+    // Auto-enable public access if not already enabled
+    if (!isPublic) {
+      try {
+        const { error } = await supabase
+          .from("quizzes")
+          .update({ is_public: true })
+          .eq("id", quizId);
+
+        if (error) throw error;
+        
+        setIsPublic(true);
+        toast({
+          title: "Quiz is now public",
+          description: "Anyone with the link can now access this quiz.",
+        });
+      } catch (error) {
+        console.error("Error making quiz public:", error);
+        toast({
+          title: "Error",
+          description: "Failed to make quiz public. Please try the toggle manually.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const link = `${window.location.origin}/quiz/${quizId}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
@@ -221,23 +247,30 @@ export function ShareQuizDialog({ open, onOpenChange, quizId, quizTitle, isPubli
           </div>
 
           {/* Copy Link Button */}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={copyShareLink}
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Link
-              </>
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full h-12"
+              onClick={copyShareLink}
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 mr-2" />
+                  {isPublic ? "Copy Share Link" : "Make Public & Copy Link"}
+                </>
+              )}
+            </Button>
+            {!isPublic && (
+              <p className="text-xs text-muted-foreground text-center">
+                Clicking this will automatically make the quiz public
+              </p>
             )}
-          </Button>
+          </div>
 
           {/* Share with specific users */}
           <div>
