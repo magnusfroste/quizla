@@ -69,14 +69,23 @@ const Quiz = () => {
   const loadQuiz = async () => {
     if (!id) return;
     try {
+      console.log('Loading quiz with ID:', id);
       const { data: quizData, error: quizError } = await supabase
         .from('quizzes')
         .select('*')
         .eq('id', id)
         .maybeSingle();
 
-      if (quizError) throw quizError;
-      if (!quizData) throw new Error('Quiz not found');
+      console.log('Quiz query result:', { quizData, quizError });
+      
+      if (quizError) {
+        console.error('Quiz query error:', quizError);
+        throw quizError;
+      }
+      if (!quizData) {
+        console.error('Quiz not found in database');
+        throw new Error('Quiz not found');
+      }
 
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
@@ -84,7 +93,12 @@ const Quiz = () => {
         .eq('quiz_id', id)
         .order('order_index', { ascending: true });
 
-      if (questionsError) throw questionsError;
+      console.log('Questions query result:', { questionsData, questionsError });
+      
+      if (questionsError) {
+        console.error('Questions query error:', questionsError);
+        throw questionsError;
+      }
 
       setQuiz(quizData);
       setQuestions(questionsData || []);
