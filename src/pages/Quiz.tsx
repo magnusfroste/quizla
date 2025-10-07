@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, ChevronDown, ChevronUp, RotateCcw, BookOpen, Home } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, ChevronDown, ChevronUp, RotateCcw, BookOpen, Home, Users } from "lucide-react";
 import { MobileQuizNavigation } from "@/components/MobileQuizNavigation";
 import { useTouchSwipe } from "@/hooks/use-touch-swipe";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -51,6 +51,9 @@ const Quiz = () => {
   const [score, setScore] = useState<number | null>(null);
   const [shuffledAnswers, setShuffledAnswers] = useState<Record<string, string[]>>({});
   const [scoreSummaryExpanded, setScoreSummaryExpanded] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [showSignupBanner, setShowSignupBanner] = useState(true);
+  const [attemptCount, setAttemptCount] = useState(0);
 
   // Mobile swipe navigation
   useTouchSwipe({
@@ -96,6 +99,8 @@ const Quiz = () => {
 
       // Create attempt
       const { data: { session } } = await supabase.auth.getSession();
+      setIsAnonymous(!session?.user);
+      
       const { data: attemptData, error: attemptError } = await supabase
         .from('attempts')
         .insert({
@@ -108,6 +113,15 @@ const Quiz = () => {
 
       if (attemptError) throw attemptError;
       setAttemptId(attemptData.id);
+
+      // Load attempt count
+      const { data: attemptsData } = await supabase
+        .from('attempts')
+        .select('id')
+        .eq('quiz_id', id)
+        .not('completed_at', 'is', null);
+      
+      setAttemptCount(attemptsData?.length || 0);
 
       document.title = `${quizData.title} | QuizGenius`;
     } catch (e: any) {
@@ -204,6 +218,87 @@ const Quiz = () => {
   const selectedAnswer = answers[currentQuestion.id];
 
   if (submitted) {
+    // Show conversion modal for anonymous users
+    if (isAnonymous) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+          <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-4 flex items-center gap-3">
+              <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <h1 className="text-xl font-bold">Quiz Complete!</h1>
+            </div>
+          </header>
+
+          <main className="container mx-auto px-4 py-8 max-w-2xl">
+            <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-xl">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle2 className="h-10 w-10 text-primary" />
+                </div>
+                <CardTitle className="text-3xl font-bold mb-2">Great Job!</CardTitle>
+                <p className="text-5xl font-bold text-primary mb-2">
+                  {score} / {questions.length}
+                </p>
+                <p className="text-lg text-muted-foreground">
+                  {((score || 0) / questions.length * 100).toFixed(0)}% correct
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-muted/50 rounded-lg p-6 space-y-4">
+                  <h3 className="font-semibold text-xl text-center">🎓 Create a Free Account to Unlock:</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <span>See detailed answer explanations for all questions</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Track your quiz history and progress over time</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Compare your performance with classmates</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Create and share your own AI-generated quizzes</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+                  <p className="text-sm font-medium mb-1">
+                    <Users className="h-4 w-4 inline mr-1" />
+                    Join {Math.max(attemptCount + 234, 250)} students already using QuizGenius
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button 
+                    onClick={() => navigate('/auth')}
+                    className="w-full h-14 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                    size="lg"
+                  >
+                    Create Free Account
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    onClick={() => navigate('/dashboard')}
+                    className="w-full"
+                  >
+                    Continue as Guest
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </main>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -429,6 +524,39 @@ const Quiz = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
+        {/* Sign up banner for anonymous users */}
+        {isAnonymous && showSignupBanner && (
+          <Card className="mb-6 border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <p className="font-semibold mb-1">
+                    👥 {attemptCount} students took this quiz
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Sign up to save your score and track your progress!
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => navigate('/auth')}
+                    className="bg-gradient-to-r from-primary to-primary-dark"
+                  >
+                    Sign Up
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setShowSignupBanner(false)}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="mb-6">
           <CardContent className="pt-6">
             <div className="flex justify-between items-center mb-4">

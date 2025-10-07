@@ -12,6 +12,7 @@ import { generateStudyMaterialPDF } from "@/lib/pdfExport";
 import { UploadProgress } from "@/components/UploadProgress";
 import { compressImage, createImagePreview } from "@/lib/imageCompression";
 import { ShareQuizDialog } from "@/components/ShareQuizDialog";
+import { QuizAttemptBadge } from "@/components/QuizAttemptBadge";
 
 interface Material {
   id: string;
@@ -76,11 +77,24 @@ const Collection = () => {
       // Load quizzes for this collection
       const { data: quizzesData } = await supabase
         .from('quizzes')
-        .select('id, title, description, created_at, is_public')
+        .select(`
+          id, 
+          title, 
+          description, 
+          created_at, 
+          is_public,
+          attempts(id, completed_at)
+        `)
         .eq('collection_id', id)
         .order('created_at', { ascending: false });
       
-      setQuizzes(quizzesData || []);
+      // Count completed attempts for each quiz
+      const quizzesWithCounts = (quizzesData || []).map(quiz => ({
+        ...quiz,
+        attemptCount: quiz.attempts?.filter((a: any) => a.completed_at !== null).length || 0,
+      }));
+      
+      setQuizzes(quizzesWithCounts);
 
       // Load material analyses
       const { data: analysesData } = await supabase
@@ -380,7 +394,10 @@ const Collection = () => {
                   {quizzes.map((quiz) => (
                     <Card key={quiz.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
-                        <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <CardTitle className="text-lg flex-1">{quiz.title}</CardTitle>
+                          <QuizAttemptBadge attemptCount={quiz.attemptCount || 0} />
+                        </div>
                         {quiz.description && (
                           <p className="text-sm text-muted-foreground">{quiz.description}</p>
                         )}

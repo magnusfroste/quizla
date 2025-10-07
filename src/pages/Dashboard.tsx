@@ -11,6 +11,7 @@ import { QuizHistory } from "@/components/QuizHistory";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { TopicBreakdown } from "@/components/TopicBreakdown";
 import { ShareQuizDialog } from "@/components/ShareQuizDialog";
+import { QuizAttemptBadge } from "@/components/QuizAttemptBadge";
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -91,12 +92,20 @@ const Dashboard = () => {
           collections (
             id,
             title
-          )
+          ),
+          attempts!inner(id, completed_at)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setQuizzes(data || []);
+      
+      // Count completed attempts for each quiz
+      const quizzesWithCounts = (data || []).map(quiz => ({
+        ...quiz,
+        attemptCount: quiz.attempts?.filter((a: any) => a.completed_at !== null).length || 0,
+      }));
+      
+      setQuizzes(quizzesWithCounts);
     } catch (error: any) {
       console.error('Error loading quizzes:', error);
     }
@@ -293,9 +302,12 @@ const Dashboard = () => {
                         <p className="text-xs text-muted-foreground mb-1">
                           {quiz.collections?.title || 'Unknown Collection'}
                         </p>
-                        <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
-                          {quiz.title}
-                        </h3>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors flex-1">
+                            {quiz.title}
+                          </h3>
+                          <QuizAttemptBadge attemptCount={quiz.attemptCount || 0} />
+                        </div>
                         {quiz.description && (
                           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                             {quiz.description}
