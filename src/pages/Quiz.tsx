@@ -115,6 +115,49 @@ const Quiz = () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAnonymous(!session?.user);
 
+      // Check if user has completed this quiz before
+      if (session?.user) {
+        try {
+          const { data: completedAttempt, error: attemptError } = await supabase
+            .from('attempts')
+            .select('id, score, total_questions, completed_at')
+            .eq('quiz_id', id)
+            .eq('user_id', session.user.id)
+            .not('completed_at', 'is', null)
+            .order('completed_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (completedAttempt && !attemptError) {
+            // User has completed this quiz - load their answers
+            const { data: userAnswers, error: answersError } = await supabase
+              .from('answers')
+              .select('question_id, selected_answer, is_correct')
+              .eq('attempt_id', completedAttempt.id);
+
+            if (userAnswers && !answersError) {
+              // Reconstruct answers state from database
+              const answersMap: Record<string, string> = {};
+              userAnswers.forEach(ans => {
+                answersMap[ans.question_id] = ans.selected_answer;
+              });
+              
+              setAnswers(answersMap);
+              setAttemptId(completedAttempt.id);
+              setScore(completedAttempt.score);
+              setSubmitted(true);
+              
+              toast({
+                title: 'Viewing Previous Results',
+                description: 'You can retake the quiz by clicking "Try Again"',
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('Could not load previous attempt; starting fresh quiz', err);
+        }
+      }
+
       // Load attempt count (non-blocking)
       try {
         const { data: attemptsData } = await supabase
@@ -525,7 +568,13 @@ const Quiz = () => {
               <h3 className="text-lg font-semibold text-center mb-4">What's next?</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Button 
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    setAnswers({});
+                    setAttemptId(null);
+                    setSubmitted(false);
+                    setScore(null);
+                    setCurrentIndex(0);
+                  }}
                   className="w-full h-14 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
                   size="lg"
                 >
