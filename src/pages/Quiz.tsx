@@ -111,27 +111,9 @@ const Quiz = () => {
       });
       setShuffledAnswers(shuffled);
 
-      // Create attempt (non-blocking)
+      // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
       setIsAnonymous(!session?.user);
-
-      try {
-        const { data: attemptData, error: attemptError } = await supabase
-          .from('attempts')
-          .insert({
-            quiz_id: id,
-            user_id: session?.user?.id || null,
-            total_questions: questionsData?.length || 0,
-          })
-          .select()
-          .single();
-
-        if (attemptError) throw attemptError;
-        setAttemptId(attemptData.id);
-      } catch (err) {
-        console.warn('Attempt creation failed; continuing in guest mode', err);
-        setAttemptId(null);
-      }
 
       // Load attempt count (non-blocking)
       try {
@@ -185,38 +167,64 @@ const Quiz = () => {
       if (isCorrect) correctCount++;
     }
 
-    // Guest mode: no attemptId -> skip persistence
-    if (!attemptId) {
-      setScore(correctCount);
-      setSubmitted(true);
-      toast({
-        title: 'Quiz completed (not saved)',
-        description: `Sign up to save your results. You scored ${correctCount} out of ${questions.length}`,
-      });
-      return;
-    }
-
     try {
+      // Get current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Create attempt only on submission (lazy creation)
+      let finalAttemptId = attemptId;
+      
+      if (!finalAttemptId) {
+        try {
+          const { data: attemptData, error: attemptError } = await supabase
+            .from('attempts')
+            .insert({
+              quiz_id: id,
+              user_id: session?.user?.id || null,
+              total_questions: questions.length,
+              score: correctCount,
+              completed_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+          if (attemptError) throw attemptError;
+          finalAttemptId = attemptData.id;
+          setAttemptId(finalAttemptId);
+        } catch (err) {
+          console.warn('Attempt creation failed; showing results without saving', err);
+          // Guest mode: show results without saving
+          setScore(correctCount);
+          setSubmitted(true);
+          toast({
+            title: 'Quiz completed (not saved)',
+            description: `Sign up to save your results. You scored ${correctCount} out of ${questions.length}`,
+          });
+          return;
+        }
+      } else {
+        // Update existing attempt
+        await supabase
+          .from('attempts')
+          .update({
+            score: correctCount,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', finalAttemptId);
+      }
+
       // Persist answers
       for (const question of questions) {
         const selectedAnswer = answers[question.id];
         const isCorrect = selectedAnswer === question.correct_answer;
 
         await supabase.from('answers').insert({
-          attempt_id: attemptId,
+          attempt_id: finalAttemptId,
           question_id: question.id,
           selected_answer: selectedAnswer || '',
           is_correct: isCorrect,
         });
       }
-
-      await supabase
-        .from('attempts')
-        .update({
-          score: correctCount,
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', attemptId);
 
       setScore(correctCount);
       setSubmitted(true);
