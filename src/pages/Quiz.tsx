@@ -111,31 +111,40 @@ const Quiz = () => {
       });
       setShuffledAnswers(shuffled);
 
-      // Create attempt
+      // Create attempt (non-blocking)
       const { data: { session } } = await supabase.auth.getSession();
       setIsAnonymous(!session?.user);
-      
-      const { data: attemptData, error: attemptError } = await supabase
-        .from('attempts')
-        .insert({
-          quiz_id: id,
-          user_id: session?.user?.id || null,
-          total_questions: questionsData?.length || 0,
-        })
-        .select()
-        .single();
 
-      if (attemptError) throw attemptError;
-      setAttemptId(attemptData.id);
+      try {
+        const { data: attemptData, error: attemptError } = await supabase
+          .from('attempts')
+          .insert({
+            quiz_id: id,
+            user_id: session?.user?.id || null,
+            total_questions: questionsData?.length || 0,
+          })
+          .select()
+          .single();
 
-      // Load attempt count
-      const { data: attemptsData } = await supabase
-        .from('attempts')
-        .select('id')
-        .eq('quiz_id', id)
-        .not('completed_at', 'is', null);
-      
-      setAttemptCount(attemptsData?.length || 0);
+        if (attemptError) throw attemptError;
+        setAttemptId(attemptData.id);
+      } catch (err) {
+        console.warn('Attempt creation failed; continuing in guest mode', err);
+        setAttemptId(null);
+      }
+
+      // Load attempt count (non-blocking)
+      try {
+        const { data: attemptsData } = await supabase
+          .from('attempts')
+          .select('id')
+          .eq('quiz_id', id)
+          .not('completed_at', 'is', null);
+        setAttemptCount(attemptsData?.length || 0);
+      } catch (err) {
+        console.warn('Attempt count fetch failed; defaulting to 0', err);
+        setAttemptCount(0);
+      }
 
       document.title = `${quizData.title} | QuizGenius`;
     } catch (e: any) {
@@ -167,15 +176,31 @@ const Quiz = () => {
   };
 
   const handleSubmit = async () => {
-    if (!attemptId) return;
+    let correctCount = 0;
+
+    // Calculate score locally first
+    for (const question of questions) {
+      const selectedAnswer = answers[question.id];
+      const isCorrect = selectedAnswer === question.correct_answer;
+      if (isCorrect) correctCount++;
+    }
+
+    // Guest mode: no attemptId -> skip persistence
+    if (!attemptId) {
+      setScore(correctCount);
+      setSubmitted(true);
+      toast({
+        title: 'Quiz completed (not saved)',
+        description: `Sign up to save your results. You scored ${correctCount} out of ${questions.length}`,
+      });
+      return;
+    }
 
     try {
-      let correctCount = 0;
-
+      // Persist answers
       for (const question of questions) {
         const selectedAnswer = answers[question.id];
         const isCorrect = selectedAnswer === question.correct_answer;
-        if (isCorrect) correctCount++;
 
         await supabase.from('answers').insert({
           attempt_id: attemptId,
