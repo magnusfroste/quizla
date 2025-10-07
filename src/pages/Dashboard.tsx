@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, LogOut, BookOpen, Users, Trophy, Target, TrendingUp, PlayCircle } from "lucide-react";
+import { Plus, LogOut, BookOpen, Users, Trophy, Target, TrendingUp, PlayCircle, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CollectionCard from "@/components/CollectionCard";
@@ -10,6 +10,7 @@ import CreateCollectionDialog from "@/components/CreateCollectionDialog";
 import { QuizHistory } from "@/components/QuizHistory";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { TopicBreakdown } from "@/components/TopicBreakdown";
+import { ShareQuizDialog } from "@/components/ShareQuizDialog";
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -17,11 +18,13 @@ const Dashboard = () => {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState<any>(null);
   const [analytics, setAnalytics] = useState({
     attempts: [],
     totalAttempts: 0,
     averageScore: 0,
-    sharedCollections: 0,
+    sharedQuizzes: 0,
     topicStats: [],
   });
   const navigate = useNavigate();
@@ -84,6 +87,7 @@ const Dashboard = () => {
           title,
           description,
           created_at,
+          is_public,
           collections (
             id,
             title
@@ -146,9 +150,9 @@ const Dashboard = () => {
         ? Math.round(totalScore / formattedAttempts.length) 
         : 0;
 
-      // Load shared collections
+      // Load shared quizzes
       const { data: sharesData } = await supabase
-        .from('collection_shares')
+        .from('quiz_shares')
         .select('id');
 
       // Load topic performance stats
@@ -185,7 +189,7 @@ const Dashboard = () => {
         attempts: formattedAttempts,
         totalAttempts: formattedAttempts.length,
         averageScore,
-        sharedCollections: sharesData?.length || 0,
+        sharedQuizzes: sharesData?.length || 0,
         topicStats,
       });
     } catch (error: any) {
@@ -298,13 +302,27 @@ const Dashboard = () => {
                           </p>
                         )}
                       </div>
-                      <Button
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                        className="w-full bg-gradient-to-r from-primary to-primary-dark h-12 text-base font-semibold"
-                      >
-                        <PlayCircle className="h-5 w-5 mr-2" />
-                        Start Learning
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => navigate(`/quiz/${quiz.id}`)}
+                          className="flex-1 bg-gradient-to-r from-primary to-primary-dark h-12 text-base font-semibold"
+                        >
+                          <PlayCircle className="h-5 w-5 mr-2" />
+                          Start Learning
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-12 w-12"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedQuiz(quiz);
+                            setShareDialogOpen(true);
+                          }}
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -392,6 +410,16 @@ const Dashboard = () => {
         onOpenChange={setCreateOpen}
         onSuccess={loadCollections}
       />
+      
+      {selectedQuiz && (
+        <ShareQuizDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          quizId={selectedQuiz.id}
+          quizTitle={selectedQuiz.title}
+          isPublic={selectedQuiz.is_public || false}
+        />
+      )}
     </div>
   );
 };

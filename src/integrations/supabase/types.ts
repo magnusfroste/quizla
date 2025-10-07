@@ -371,12 +371,49 @@ export type Database = {
           },
         ]
       }
+      quiz_shares: {
+        Row: {
+          created_at: string
+          id: string
+          quiz_id: string
+          shared_with_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quiz_id: string
+          shared_with_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quiz_id?: string
+          shared_with_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_shares_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_shares_shared_with_user_id_fkey"
+            columns: ["shared_with_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quizzes: {
         Row: {
           collection_id: string
           created_at: string
           description: string | null
           id: string
+          is_public: boolean
           title: string
         }
         Insert: {
@@ -384,6 +421,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_public?: boolean
           title: string
         }
         Update: {
@@ -391,6 +429,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_public?: boolean
           title?: string
         }
         Relationships: [
@@ -410,6 +449,10 @@ export type Database = {
     Functions: {
       has_collection_share_access: {
         Args: { _collection_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_quiz_share_access: {
+        Args: { _quiz_id: string; _user_id: string }
         Returns: boolean
       }
       is_collection_owner: {

@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download, Camera, PlayCircle } from "lucide-react";
+import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download, Camera, PlayCircle, Share2 } from "lucide-react";
 import { StudyMaterialViewer } from "@/components/StudyMaterialViewer";
 import { MaterialGallery } from "@/components/MaterialGallery";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { generateStudyMaterialPDF } from "@/lib/pdfExport";
 import { UploadProgress } from "@/components/UploadProgress";
 import { compressImage, createImagePreview } from "@/lib/imageCompression";
+import { ShareQuizDialog } from "@/components/ShareQuizDialog";
 
 interface Material {
   id: string;
@@ -35,6 +36,8 @@ const Collection = () => {
   const [showViewer, setShowViewer] = useState(false);
   const [materialViewerOpen, setMaterialViewerOpen] = useState(false);
   const [materialViewerIndex, setMaterialViewerIndex] = useState(0);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState<any>(null);
   const [uploadItems, setUploadItems] = useState<Array<{
     id: string;
     file: File;
@@ -73,7 +76,7 @@ const Collection = () => {
       // Load quizzes for this collection
       const { data: quizzesData } = await supabase
         .from('quizzes')
-        .select('id, title, description, created_at')
+        .select('id, title, description, created_at, is_public')
         .eq('collection_id', id)
         .order('created_at', { ascending: false });
       
@@ -382,14 +385,27 @@ const Collection = () => {
                       {quiz.description && (
                         <p className="text-sm text-muted-foreground mb-4">{quiz.description}</p>
                       )}
-                      <Button 
-                        size="lg"
-                        className="w-full h-12 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                      >
-                        <PlayCircle className="h-5 w-5 mr-2" />
-                        Start Learning
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="lg"
+                          className="flex-1 h-12 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                          onClick={() => navigate(`/quiz/${quiz.id}`)}
+                        >
+                          <PlayCircle className="h-5 w-5 mr-2" />
+                          Start Learning
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-12 w-12"
+                          onClick={() => {
+                            setSelectedQuiz(quiz);
+                            setShareDialogOpen(true);
+                          }}
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </CardContent>
@@ -536,6 +552,16 @@ const Collection = () => {
             uploads={uploadItems}
             onCancel={handleCancelUpload}
             onClose={handleCloseUploadProgress}
+          />
+        )}
+
+        {selectedQuiz && (
+          <ShareQuizDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            quizId={selectedQuiz.id}
+            quizTitle={selectedQuiz.title}
+            isPublic={selectedQuiz.is_public || false}
           />
         )}
       </main>

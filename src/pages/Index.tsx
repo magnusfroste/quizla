@@ -84,8 +84,8 @@ const Index = () => {
           <Users className="h-12 w-12 text-primary mx-auto mb-4" />
           <h2 className="text-3xl font-bold mb-4">Share Your Knowledge</h2>
           <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Create collections, share with classmates, and collaborate on study materials. 
-            Anyone can take your quizzes with a simple link.
+            Share quizzes with classmates and study together.
+            Anyone with the link can practice and learn.
           </p>
           <Button
             size="lg"

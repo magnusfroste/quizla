@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Image as ImageIcon, Sparkles, Share2, Trash2 } from "lucide-react";
+import { BookOpen, Image as ImageIcon, Sparkles, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -85,13 +85,6 @@ const CollectionCard = ({ collection, onUpdate }: CollectionCardProps) => {
         >
           <Sparkles className="h-4 w-4 mr-2" />
           Open
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => navigate(`/collection/${collection.id}/share`)}
-        >
-          <Share2 className="h-4 w-4" />
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
