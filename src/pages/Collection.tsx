@@ -371,24 +371,24 @@ const Collection = () => {
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
             {quizzes.length > 0 && (
-              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PlayCircle className="h-5 w-5 text-primary" />
-                    Available Quizzes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <h2 className="text-2xl font-semibold flex items-center gap-2">
+                  <PlayCircle className="h-6 w-6 text-primary" />
+                  Available Quizzes
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
                   {quizzes.map((quiz) => (
-                    <div key={quiz.id} className="border rounded-xl p-6 bg-card hover:shadow-md transition-shadow">
-                      <h3 className="font-semibold text-lg mb-2">{quiz.title}</h3>
-                      {quiz.description && (
-                        <p className="text-sm text-muted-foreground mb-4">{quiz.description}</p>
-                      )}
-                      <div className="flex gap-2">
+                    <Card key={quiz.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                        {quiz.description && (
+                          <p className="text-sm text-muted-foreground">{quiz.description}</p>
+                        )}
+                      </CardHeader>
+                      <CardContent className="space-y-3">
                         <Button 
                           size="lg"
-                          className="flex-1 h-12 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                          className="w-full h-12 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
                           onClick={() => navigate(`/quiz/${quiz.id}`)}
                         >
                           <PlayCircle className="h-5 w-5 mr-2" />
@@ -396,20 +396,21 @@ const Collection = () => {
                         </Button>
                         <Button
                           variant="outline"
-                          size="icon"
-                          className="h-12 w-12"
+                          size="sm"
+                          className="w-full"
                           onClick={() => {
                             setSelectedQuiz(quiz);
                             setShareDialogOpen(true);
                           }}
                         >
-                          <Share2 className="h-4 w-4" />
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share Quiz
                         </Button>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             <Card>
