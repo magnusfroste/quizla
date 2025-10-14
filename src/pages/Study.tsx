@@ -281,6 +281,43 @@ export default function Study() {
     setIsReading(true);
   };
 
+  const handleReadPage = (text: string) => {
+    if (isReading) {
+      speechSynthesis.cancel();
+      setIsReading(false);
+      return;
+    }
+
+    if (!text || !text.trim()) {
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'sv-SE';
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    const voices = speechSynthesis.getVoices();
+    const swedishVoice = voices.find(voice => 
+      voice.lang === 'sv-SE' || voice.lang.startsWith('sv')
+    );
+    if (swedishVoice) {
+      utterance.voice = swedishVoice;
+    }
+    
+    utterance.onend = () => {
+      setIsReading(false);
+    };
+    
+    utterance.onerror = () => {
+      setIsReading(false);
+    };
+
+    speechSynthesis.speak(utterance);
+    setIsReading(true);
+  };
+
   const topicGroups = groupAnalysesByTopic();
 
   // Get all unique topics from content materials only
@@ -630,29 +667,72 @@ export default function Study() {
                 ) : (
                   filteredAnalyses.map((analysis) => {
                     const material = materials.find(m => m.id === analysis.material_id);
+                    const imageUrl = material ? materialUrls.get(material.id) : null;
                     
                     return (
                       <Card key={analysis.id}>
                         <CardHeader>
-                          <CardTitle className="text-base">
-                            Page {analysis.page_number}
-                            {material && (
-                              <span className="text-sm text-muted-foreground ml-2">
-                                • {material.file_name}
-                              </span>
-                            )}
-                          </CardTitle>
-                          <CardDescription>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {analysis.major_topics.map((topic, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">
-                                  {topic}
-                                </Badge>
-                              ))}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-base">
+                                Page {analysis.page_number}
+                                {material && (
+                                  <span className="text-sm text-muted-foreground ml-2">
+                                    • {material.file_name}
+                                  </span>
+                                )}
+                              </CardTitle>
+                              <CardDescription>
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {analysis.major_topics.map((topic, i) => (
+                                    <Badge key={i} variant="outline" className="text-xs">
+                                      {topic}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </CardDescription>
                             </div>
-                          </CardDescription>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleReadPage(analysis.extracted_text)}
+                            >
+                              {isReading ? (
+                                <VolumeX className="h-4 w-4" />
+                              ) : (
+                                <Volume2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                          {/* Visual Elements with Thumbnail */}
+                          {analysis.visual_elements.length > 0 && material && imageUrl && (
+                            <div className="flex gap-4 p-3 bg-muted/30 rounded-lg">
+                              <div 
+                                className="flex-shrink-0 cursor-pointer"
+                                onClick={() => handleOpenMaterial(material.id)}
+                              >
+                                <img 
+                                  src={imageUrl} 
+                                  alt={material.file_name}
+                                  className="w-32 h-32 object-cover rounded-md border hover:ring-2 hover:ring-primary transition-all"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                  <ImageIcon className="h-4 w-4" />
+                                  Visual Elements
+                                </h4>
+                                <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
+                                  {analysis.visual_elements.map((element, idx) => (
+                                    <li key={idx}>{element}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          )}
+
                           <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                             {analysis.extracted_text}
                           </p>
