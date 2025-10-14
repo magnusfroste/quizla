@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download, Camera, PlayCircle, Share2 } from "lucide-react";
-import { StudyMaterialViewer } from "@/components/StudyMaterialViewer";
 import { MaterialGallery } from "@/components/MaterialGallery";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { generateStudyMaterialPDF } from "@/lib/pdfExport";
@@ -35,7 +34,6 @@ const Collection = () => {
   const [collection, setCollection] = useState<any | null>(null);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [analyses, setAnalyses] = useState<any[]>([]);
-  const [showViewer, setShowViewer] = useState(false);
   const [materialViewerOpen, setMaterialViewerOpen] = useState(false);
   const [materialViewerIndex, setMaterialViewerIndex] = useState(0);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -544,10 +542,12 @@ const Collection = () => {
                     <Button 
                       variant="outline"
                       className="w-full"
-                      onClick={() => setShowViewer(true)}
+                      asChild
                     >
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      View Study Materials
+                      <Link to={`/collection/${id}/study`}>
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        View Study Materials
+                      </Link>
                     </Button>
                     
                     <Button 
@@ -590,14 +590,7 @@ const Collection = () => {
           </div>
         </div>
 
-        <StudyMaterialViewer 
-          analyses={analyses}
-          collectionId={id}
-          open={showViewer}
-          onClose={() => setShowViewer(false)}
-        />
-
-        <MaterialViewer 
+        <MaterialViewer
           materials={collection.materials || []}
           analyses={analyses}
           initialIndex={materialViewerIndex}
