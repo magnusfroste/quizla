@@ -410,18 +410,18 @@ export function StudyMaterialViewer({ analyses, collectionId, open, onClose }: S
                                 const visualTexts = materialAnalyses.flatMap(a => a.visual_elements);
 
                                 return (
-                                  <div key={materialId} className="flex gap-3 p-3 bg-muted/30 rounded-lg">
+                                  <div key={materialId} className="flex flex-col gap-3 p-3 bg-muted/30 rounded-lg">
                                     <div 
-                                      className="flex-shrink-0 w-32 h-32 cursor-pointer rounded-md overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
+                                      className="w-full flex justify-center cursor-pointer"
                                       onClick={() => handleOpenMaterial(materialId)}
                                     >
                                       <img 
                                         src={imageUrl} 
                                         alt={material.file_name}
-                                        className="w-full h-full object-contain"
+                                        className="max-w-xs rounded-md border hover:ring-2 hover:ring-primary transition-all"
                                       />
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="w-full">
                                       <p className="text-xs text-muted-foreground mb-2">
                                         {material.file_name}
                                       </p>
