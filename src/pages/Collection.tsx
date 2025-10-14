@@ -597,6 +597,7 @@ const Collection = () => {
           initialIndex={materialViewerIndex}
           open={materialViewerOpen}
           onClose={() => setMaterialViewerOpen(false)}
+          onTypeChange={handleMaterialTypeChange}
         />
 
         {uploadItems.length > 0 && (

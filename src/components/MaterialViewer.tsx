@@ -8,8 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Tag } from "lucide-react";
 import { useTouchSwipe } from "@/hooks/use-touch-swipe";
+import { MaterialTypeDialog } from "./MaterialTypeDialog";
 
 interface Material {
   id: string;
@@ -17,6 +18,7 @@ interface Material {
   mime_type: string | null;
   file_size: number | null;
   storage_path: string;
+  material_type: 'content' | 'learning_objectives' | 'reference';
 }
 
 interface MaterialViewerProps {
@@ -25,6 +27,7 @@ interface MaterialViewerProps {
   initialIndex: number;
   open: boolean;
   onClose: () => void;
+  onTypeChange?: (materialId: string, newType: 'content' | 'learning_objectives' | 'reference') => Promise<void>;
 }
 
 // Cache for signed URLs
@@ -59,10 +62,12 @@ export function MaterialViewer({
   initialIndex,
   open,
   onClose,
+  onTypeChange,
 }: MaterialViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [imageUrl, setImageUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
 
   const currentMaterial = materials[currentIndex];
   const currentAnalysis = currentMaterial
@@ -122,6 +127,23 @@ export function MaterialViewer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, currentIndex, materials.length]);
 
+  const handleSaveType = async (materialId: string, newType: 'content' | 'learning_objectives' | 'reference') => {
+    if (onTypeChange) {
+      await onTypeChange(materialId, newType);
+    }
+  };
+
+  const getTypeLabel = (type: 'content' | 'learning_objectives' | 'reference') => {
+    switch (type) {
+      case 'learning_objectives':
+        return { icon: '🎯', label: 'Learning Goals' };
+      case 'reference':
+        return { icon: '📌', label: 'Reference' };
+      default:
+        return { icon: '📚', label: 'Study Material' };
+    }
+  };
+
   if (!currentMaterial) return null;
 
   return (
@@ -177,10 +199,22 @@ export function MaterialViewer({
 
         {/* Metadata Footer */}
         <div className="px-6 py-4 border-t space-y-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={currentAnalysis ? "default" : "secondary"}>
               {currentAnalysis ? "✓ Analyzed" : "⏳ Not Analyzed"}
             </Badge>
+            
+            {/* Material Type Badge with Click */}
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-accent gap-1"
+              onClick={() => setTypeDialogOpen(true)}
+            >
+              {getTypeLabel(currentMaterial.material_type).icon}
+              {getTypeLabel(currentMaterial.material_type).label}
+              <Tag className="h-3 w-3 ml-1" />
+            </Badge>
+            
             {currentAnalysis?.page_number && (
               <span className="text-sm text-muted-foreground">
                 Page {currentAnalysis.page_number}
@@ -219,6 +253,13 @@ export function MaterialViewer({
           )}
         </div>
       </DialogContent>
+
+      <MaterialTypeDialog
+        open={typeDialogOpen}
+        onOpenChange={setTypeDialogOpen}
+        material={currentMaterial}
+        onSave={handleSaveType}
+      />
     </Dialog>
   );
 }

@@ -31,6 +31,7 @@ interface Material {
   mime_type: string | null;
   file_size: number | null;
   storage_path: string;
+  material_type: 'content' | 'learning_objectives' | 'reference';
 }
 
 interface StudyMaterialViewerProps {
