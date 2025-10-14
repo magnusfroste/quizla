@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, BookOpen, Brain, Lightbulb, X, List, Grid } from "lucide-react";
+import { Search, BookOpen, Brain, Lightbulb, X, List, Grid, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -42,6 +42,7 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"topics" | "pages">("topics");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Group analyses by topic
   const groupAnalysesByTopic = (): TopicGroup[] => {
@@ -168,12 +169,52 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
             />
           </div>
 
-          {/* View Toggle and Topic Filter */}
+          {/* Filters Button and View Toggle */}
           <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="relative"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+              {selectedTopics.size > 0 && (
+                <Badge variant="default" className="ml-2 h-5 px-1.5 text-xs">
+                  {selectedTopics.size}
+                </Badge>
+              )}
+            </Button>
+
+            {/* View Mode Toggle */}
+            <div className="flex gap-1 border rounded-md p-1">
+              <Button
+                variant={viewMode === "topics" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("topics")}
+                className="h-8 px-3"
+              >
+                <List className="h-4 w-4 mr-1" />
+                Topics
+              </Button>
+              <Button
+                variant={viewMode === "pages" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("pages")}
+                className="h-8 px-3"
+              >
+                <Grid className="h-4 w-4 mr-1" />
+                Pages
+              </Button>
+            </div>
+          </div>
+
+          {/* Collapsible Topic Filters */}
+          {showFilters && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Filter by Topics:</p>
-                {(selectedTopics.size > 0 || searchQuery) && (
+                {selectedTopics.size > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -201,29 +242,7 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
                 ))}
               </div>
             </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex gap-1 border rounded-md p-1">
-              <Button
-                variant={viewMode === "topics" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("topics")}
-                className="h-8 px-3"
-              >
-                <List className="h-4 w-4 mr-1" />
-                Topics
-              </Button>
-              <Button
-                variant={viewMode === "pages" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("pages")}
-                className="h-8 px-3"
-              >
-                <Grid className="h-4 w-4 mr-1" />
-                Pages
-              </Button>
-            </div>
-          </div>
+          )}
 
           <Separator />
 
