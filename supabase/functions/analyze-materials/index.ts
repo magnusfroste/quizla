@@ -51,6 +51,24 @@ serve(async (req) => {
 
     console.log(`Found ${materials.length} materials to analyze`);
 
+    // Initialize progress tracking
+    const { data: progressData, error: progressError } = await supabaseClient
+      .from('analysis_progress')
+      .insert({
+        collection_id: collectionId,
+        current_page: 0,
+        total_pages: materials.length,
+        status: 'processing',
+      })
+      .select()
+      .single();
+
+    if (progressError) {
+      console.error('Failed to create progress record:', progressError);
+    }
+
+    const progressId = progressData?.id;
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY not configured');
@@ -65,6 +83,18 @@ serve(async (req) => {
 
     for (const material of materials) {
       console.log(`Analyzing material: ${material.file_name}`);
+
+      // Update progress
+      if (progressId) {
+        await supabaseClient
+          .from('analysis_progress')
+          .update({
+            current_page: pageNumber,
+            current_file_name: material.file_name,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', progressId);
+      }
 
       // Generate signed URL for the material
       const { data: signedUrlData, error: urlError } = await supabaseClient
@@ -246,6 +276,26 @@ Return valid JSON:
     }
 
     console.log(`Analysis complete. Processed ${analysisResults.length} materials`);
+
+    // Update progress to complete and clean up
+    if (progressId) {
+      await supabaseClient
+        .from('analysis_progress')
+        .update({
+          status: 'complete',
+          current_page: materials.length,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', progressId);
+
+      // Delete progress record after a short delay
+      setTimeout(async () => {
+        await supabaseClient
+          .from('analysis_progress')
+          .delete()
+          .eq('id', progressId);
+      }, 2000);
+    }
 
     return new Response(
       JSON.stringify({

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      analysis_progress: {
+        Row: {
+          collection_id: string
+          created_at: string | null
+          current_file_name: string | null
+          current_page: number
+          id: string
+          status: string
+          total_pages: number
+          updated_at: string | null
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string | null
+          current_file_name?: string | null
+          current_page?: number
+          id?: string
+          status?: string
+          total_pages: number
+          updated_at?: string | null
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string | null
+          current_file_name?: string | null
+          current_page?: number
+          id?: string
+          status?: string
+          total_pages?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_progress_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       answers: {
         Row: {
           attempt_id: string

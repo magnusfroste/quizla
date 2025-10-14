@@ -31,6 +31,11 @@ const Collection = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState<{
+    current_page: number;
+    total_pages: number;
+    current_file_name: string | null;
+  } | null>(null);
   const [collection, setCollection] = useState<any | null>(null);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [analyses, setAnalyses] = useState<any[]>([]);
@@ -294,7 +299,37 @@ const Collection = () => {
 
   const handleAnalyzeMaterials = async () => {
     if (!id) return;
+
+    // Show expectation message
+    toast({
+      title: 'Starting content extraction',
+      description: 'Analyzing images will take a few minutes. Please be patient and keep this page open.',
+      duration: 5000,
+    });
+
     setAnalyzing(true);
+    setAnalysisProgress({ current_page: 0, total_pages: materialCount, current_file_name: null });
+
+    // Set up realtime subscription for progress updates
+    const channel = supabase
+      .channel(`analysis-progress-${id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'analysis_progress',
+        filter: `collection_id=eq.${id}`
+      }, (payload: any) => {
+        console.log('Progress update:', payload);
+        if (payload.new) {
+          setAnalysisProgress({
+            current_page: payload.new.current_page,
+            total_pages: payload.new.total_pages,
+            current_file_name: payload.new.current_file_name,
+          });
+        }
+      })
+      .subscribe();
+
     try {
       const { data, error } = await supabase.functions.invoke('analyze-materials', {
         body: { collectionId: id },
@@ -315,6 +350,9 @@ const Collection = () => {
       toast({ title: 'Analysis error', description: msg, variant: 'destructive' });
     } finally {
       setAnalyzing(false);
+      setAnalysisProgress(null);
+      // Clean up subscription
+      supabase.removeChannel(channel);
     }
   };
 
@@ -534,8 +572,28 @@ const Collection = () => {
                   disabled={analyzing || materialCount === 0}
                 >
                   <Brain className="h-4 w-4 mr-2" />
-                  {analyzing ? 'Analyzing...' : 'Extract Content'}
+                  {analyzing && analysisProgress 
+                    ? `Analyzing... (${analysisProgress.current_page}/${analysisProgress.total_pages}) ${Math.round((analysisProgress.current_page / analysisProgress.total_pages) * 100)}%`
+                    : analyzing 
+                    ? 'Starting...' 
+                    : 'Extract Content'}
                 </Button>
+
+                {analyzing && analysisProgress && (
+                  <div className="space-y-2">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${(analysisProgress.current_page / analysisProgress.total_pages) * 100}%` }}
+                      />
+                    </div>
+                    {analysisProgress.current_file_name && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        Analyzing: {analysisProgress.current_file_name}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {analyses.length > 0 && (
                   <>
