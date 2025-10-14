@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, BookOpen, Brain, Lightbulb, List, Grid, Filter, Image as ImageIcon, ArrowLeft } from "lucide-react";
+import { Search, BookOpen, Brain, Lightbulb, List, Grid, Filter, Image as ImageIcon, ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MaterialViewer } from "@/components/MaterialViewer";
 
@@ -86,6 +86,8 @@ export default function Study() {
   const [analyses, setAnalyses] = useState<MaterialAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [collectionTitle, setCollectionTitle] = useState("");
+  const [isReading, setIsReading] = useState(false);
+  const [speechSynthesis] = useState(() => window.speechSynthesis);
 
   // Load collection and analyses
   useEffect(() => {
@@ -235,6 +237,40 @@ export default function Study() {
     }
   };
 
+  const handleReadAloud = () => {
+    if (isReading) {
+      speechSynthesis.cancel();
+      setIsReading(false);
+      return;
+    }
+
+    // Get all visible text content
+    const contentToRead = filteredAnalyses
+      .map(analysis => analysis.extracted_text)
+      .filter(text => text && text.trim().length > 0)
+      .join('. ');
+
+    if (!contentToRead) {
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(contentToRead);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    utterance.onend = () => {
+      setIsReading(false);
+    };
+    
+    utterance.onerror = () => {
+      setIsReading(false);
+    };
+
+    speechSynthesis.speak(utterance);
+    setIsReading(true);
+  };
+
   const topicGroups = groupAnalysesByTopic();
 
   // Get all unique topics from content materials only
@@ -332,20 +368,40 @@ export default function Study() {
 
           {/* Filters Button and View Toggle */}
           <div className="flex items-center justify-between gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="relative"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              {selectedTopics.size > 0 && (
-                <Badge variant="default" className="ml-2 h-5 px-1.5 text-xs">
-                  {selectedTopics.size}
-                </Badge>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="relative"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+                {selectedTopics.size > 0 && (
+                  <Badge variant="default" className="ml-2 h-5 px-1.5 text-xs">
+                    {selectedTopics.size}
+                  </Badge>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReadAloud}
+              >
+                {isReading ? (
+                  <>
+                    <VolumeX className="h-4 w-4 mr-2" />
+                    Stop Reading
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="h-4 w-4 mr-2" />
+                    Read it for me
+                  </>
+                )}
+              </Button>
+            </div>
 
             {/* View Mode Toggle */}
             <div className="flex gap-1 border rounded-md p-1">

@@ -116,7 +116,7 @@ DEFINITIONS: Extract terms with explanations as JSON:
 
 FORMULAS: List mathematical/scientific formulas
 
-VISUAL ELEMENTS: Describe diagrams, charts, images (what they show, purpose)
+VISUAL ELEMENTS: Only note the TYPE of visual (e.g., "Image: Map", "Diagram: Process flow", "Chart: Statistics"). Do NOT describe content in detail.
 
 EMPHASIS: Note highlighted, bold, or emphasized content
 
