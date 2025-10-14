@@ -255,9 +255,19 @@ export default function Study() {
     }
 
     const utterance = new SpeechSynthesisUtterance(contentToRead);
-    utterance.rate = 1.0;
+    utterance.lang = 'sv-SE'; // Swedish language
+    utterance.rate = 0.95;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
+    
+    // Try to find a Swedish voice
+    const voices = speechSynthesis.getVoices();
+    const swedishVoice = voices.find(voice => 
+      voice.lang === 'sv-SE' || voice.lang.startsWith('sv')
+    );
+    if (swedishVoice) {
+      utterance.voice = swedishVoice;
+    }
     
     utterance.onend = () => {
       setIsReading(false);
