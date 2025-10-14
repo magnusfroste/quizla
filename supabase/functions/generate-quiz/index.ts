@@ -35,6 +35,17 @@ serve(async (req) => {
       throw new Error('Collection not found');
     }
 
+    // Fetch materials with their types and analyses
+    const { data: materials, error: materialsError } = await supabase
+      .from('materials')
+      .select('id, material_type, file_name')
+      .eq('collection_id', collectionId);
+
+    if (materialsError) {
+      console.error('Error fetching materials:', materialsError);
+      throw new Error('Failed to fetch materials');
+    }
+
     // Check if we have analyzed content in knowledge base
     const { data: analyses, error: analysisError } = await supabase
       .from('material_analysis')
@@ -50,6 +61,18 @@ serve(async (req) => {
     if (!analyses || analyses.length === 0) {
       throw new Error('No analyzed materials found. Please run "Extract Content" first.');
     }
+
+    // Map material types to analyses
+    const materialTypeMap = new Map(materials?.map(m => [m.id, m.material_type]) || []);
+    const enrichedAnalyses = analyses.map(a => ({
+      ...a,
+      material_type: materialTypeMap.get(a.material_id) || 'content'
+    }));
+
+    // Categorize analyses by type
+    const learningObjectives = enrichedAnalyses.filter(a => a.material_type === 'learning_objectives');
+    const contentMaterials = enrichedAnalyses.filter(a => a.material_type === 'content');
+    const referenceMaterials = enrichedAnalyses.filter(a => a.material_type === 'reference');
 
     // Fetch existing quizzes and their questions to ensure variety
     const { data: existingQuizzes } = await supabase
@@ -81,6 +104,24 @@ serve(async (req) => {
           {
             role: 'system',
             content: `You are an experienced teacher creating exam-style quiz questions. Analyze study materials deeply and create intelligent, pedagogically sound questions.
+
+📂 MATERIAL TYPES & PRIORITIZATION:
+Materials are categorized into three types. Follow this STRICT hierarchy:
+1. 🎯 LEARNING GOALS (learning_objectives) - THE PRIMARY FOCUS
+   - These define what students MUST know and be able to do
+   - Generate questions that TEST achievement of these objectives
+   - Every learning goal should have AT LEAST one question
+   - This is your PRIMARY source of truth for what to assess
+   
+2. 📚 STUDY MATERIALS (content) - QUESTION GENERATION SOURCE
+   - Use these to create specific questions that align with learning goals
+   - Generate detailed questions based on this content
+   - Cross-reference with learning goals to ensure alignment
+   
+3. 📌 REFERENCE MATERIALS (reference) - CONTEXT ONLY
+   - Use ONLY as background context and supporting information
+   - DO NOT generate direct questions from reference materials
+   - They provide depth but are not the focus of assessment
 
 ⚡ CRITICAL LANGUAGE INSTRUCTION:
 - Detect the language of the study materials provided below
@@ -161,9 +202,23 @@ ${existingQuestions.length > 15 ? `... and ${existingQuestions.length - 15} more
 ⚡ You MUST create questions with DIFFERENT focus, wording, and angles!
 ` : ''}
 
-KNOWLEDGE BASE (${analyses.length} pages):
+${learningObjectives.length > 0 ? `
+🎯 LEARNING GOALS - YOUR PRIMARY FOCUS (${learningObjectives.length} items):
+These define what students MUST achieve. Create questions that TEST these objectives:
 
-${analyses.map((analysis, idx) => `
+${learningObjectives.map((analysis, idx) => `
+Learning Goal ${idx + 1}:
+${analysis.learning_objectives?.length > 0 ? `Objectives:\n${analysis.learning_objectives.map((lo: string) => `• ${lo}`).join('\n')}\n` : ''}
+Key Concepts to Test: ${analysis.key_concepts.join(', ')}
+${analysis.extracted_text.substring(0, 600)}${analysis.extracted_text.length > 600 ? '...' : ''}
+`).join('\n\n')}
+` : ''}
+
+${contentMaterials.length > 0 ? `
+📚 STUDY MATERIALS - GENERATE QUESTIONS FROM THIS (${contentMaterials.length} pages):
+Use this content to create specific questions aligned with the learning goals above:
+
+${contentMaterials.map((analysis, idx) => `
 ─── Page ${analysis.page_number || idx + 1} ───
 Topics: ${analysis.major_topics.join(', ')}
 Key Concepts: ${analysis.key_concepts.join(', ')}
@@ -171,13 +226,34 @@ Key Concepts: ${analysis.key_concepts.join(', ')}
 Content:
 ${analysis.extracted_text.substring(0, 800)}${analysis.extracted_text.length > 800 ? '...' : ''}
 
-${Object.keys(analysis.definitions).length > 0 ? `Definitions: ${JSON.stringify(analysis.definitions)}` : ''}
+${Object.keys(analysis.definitions || {}).length > 0 ? `Definitions: ${JSON.stringify(analysis.definitions)}` : ''}
 ${analysis.formulas?.length > 0 ? `Formulas: ${analysis.formulas.join(', ')}` : ''}
 ${analysis.emphasis_markers?.length > 0 ? `Important: ${analysis.emphasis_markers.join('; ')}` : ''}
 ${analysis.visual_elements?.length > 0 ? `Visuals: ${analysis.visual_elements.join('; ')}` : ''}
 `).join('\n\n')}
+` : ''}
 
-Create a comprehensive quiz covering all major topics with proper distribution across Bloom's taxonomy levels. ${quizCount > 0 ? 'Remember: VARY from existing questions!' : ''}`
+${referenceMaterials.length > 0 ? `
+📌 REFERENCE MATERIALS - CONTEXT ONLY (${referenceMaterials.length} pages):
+Use as background knowledge but DO NOT generate direct questions from these:
+
+${referenceMaterials.map((analysis, idx) => `
+Reference ${idx + 1}: ${analysis.major_topics.join(', ')}
+${analysis.extracted_text.substring(0, 400)}...
+`).join('\n\n')}
+` : ''}
+
+${learningObjectives.length === 0 ? `
+⚠️ Note: No specific learning goals were defined. Generate questions covering all major topics from the study materials.
+` : `
+✅ QUIZ STRATEGY:
+1. Start with learning goals - ensure each one is tested
+2. Use study materials to create detailed, specific questions
+3. Reference materials provide context but are not directly assessed
+4. ${quizCount > 0 ? 'Create DIFFERENT questions than previous quizzes' : 'Create comprehensive coverage'}
+`}
+
+Create a comprehensive quiz with proper distribution across Bloom's taxonomy levels. ${quizCount > 0 ? 'Remember: VARY from existing questions!' : ''}`
           }
         ],
         response_format: { type: 'json_object' }
