@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, BookOpen, Brain, Lightbulb, X, List, Grid, Filter } from "lucide-react";
+import { Search, BookOpen, Brain, Lightbulb, X, List, Grid, Filter, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { MaterialViewer } from "./MaterialViewer";
 
 interface MaterialAnalysis {
   id: string;
+  material_id: string;
   page_number: number;
   extracted_text: string;
   major_topics: string[];
@@ -22,8 +25,17 @@ interface MaterialAnalysis {
   is_foundational: boolean;
 }
 
+interface Material {
+  id: string;
+  file_name: string;
+  mime_type: string | null;
+  file_size: number | null;
+  storage_path: string;
+}
+
 interface StudyMaterialViewerProps {
   analyses: MaterialAnalysis[];
+  collectionId: string;
   open: boolean;
   onClose: () => void;
 }
@@ -34,15 +46,81 @@ interface TopicGroup {
   keyConcepts: Set<string>;
   definitions: Record<string, string>;
   formulas: Set<string>;
+  visualElements: string[];
+  materialIds: Set<string>;
   pageReferences: number[];
   isFoundational: boolean;
 }
 
-export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialViewerProps) {
+// Cache for signed URLs
+const urlCache = new Map<string, { url: string; expires: number }>();
+
+async function getSignedUrl(storagePath: string): Promise<string> {
+  const cached = urlCache.get(storagePath);
+  const now = Date.now();
+  
+  if (cached && cached.expires > now) {
+    return cached.url;
+  }
+  
+  const { data } = await supabase.storage
+    .from('study-materials')
+    .createSignedUrl(storagePath, 3600);
+  
+  if (data?.signedUrl) {
+    urlCache.set(storagePath, {
+      url: data.signedUrl,
+      expires: now + (59 * 60 * 1000)
+    });
+    return data.signedUrl;
+  }
+  
+  throw new Error('Failed to get signed URL');
+}
+
+export function StudyMaterialViewer({ analyses, collectionId, open, onClose }: StudyMaterialViewerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"topics" | "pages">("topics");
   const [showFilters, setShowFilters] = useState(false);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialUrls, setMaterialUrls] = useState<Map<string, string>>(new Map());
+  const [selectedMaterial, setSelectedMaterial] = useState<number | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+
+  // Load materials and their URLs
+  useEffect(() => {
+    if (!open || !collectionId) return;
+
+    const loadMaterials = async () => {
+      const materialIds = [...new Set(analyses.map(a => a.material_id).filter(Boolean))];
+      
+      if (materialIds.length === 0) return;
+
+      const { data: materialsData } = await supabase
+        .from('materials')
+        .select('id, storage_path, file_name, mime_type, file_size')
+        .in('id', materialIds);
+
+      if (materialsData) {
+        setMaterials(materialsData);
+
+        // Generate signed URLs
+        const urlMap = new Map<string, string>();
+        for (const material of materialsData) {
+          try {
+            const url = await getSignedUrl(material.storage_path);
+            urlMap.set(material.id, url);
+          } catch (error) {
+            console.error(`Failed to load URL for ${material.file_name}:`, error);
+          }
+        }
+        setMaterialUrls(urlMap);
+      }
+    };
+
+    loadMaterials();
+  }, [open, collectionId, analyses]);
 
   // Group analyses by topic
   const groupAnalysesByTopic = (): TopicGroup[] => {
@@ -57,6 +135,8 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
             keyConcepts: new Set(),
             definitions: {},
             formulas: new Set(),
+            visualElements: [],
+            materialIds: new Set(),
             pageReferences: [],
             isFoundational: false,
           });
@@ -79,6 +159,16 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
         
         // Collect formulas
         analysis.formulas.forEach(f => group.formulas.add(f));
+
+        // Collect visual elements
+        if (analysis.visual_elements.length > 0) {
+          group.visualElements.push(...analysis.visual_elements);
+        }
+
+        // Track material IDs
+        if (analysis.material_id) {
+          group.materialIds.add(analysis.material_id);
+        }
         
         // Add page reference
         if (!group.pageReferences.includes(analysis.page_number)) {
@@ -98,6 +188,14 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
       if (!a.isFoundational && b.isFoundational) return 1;
       return a.topic.localeCompare(b.topic);
     });
+  };
+
+  const handleOpenMaterial = (materialId: string) => {
+    const index = materials.findIndex(m => m.id === materialId);
+    if (index !== -1) {
+      setSelectedMaterial(index);
+      setViewerOpen(true);
+    }
   };
 
   const topicGroups = groupAnalysesByTopic();
@@ -274,6 +372,56 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* Visual Elements with Thumbnails */}
+                        {group.visualElements.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-semibold flex items-center gap-2">
+                              <ImageIcon className="h-4 w-4" />
+                              Visual Elements
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {Array.from(group.materialIds).map(materialId => {
+                                const material = materials.find(m => m.id === materialId);
+                                const imageUrl = materialUrls.get(materialId);
+                                
+                                if (!material || !imageUrl) return null;
+
+                                // Get visual elements for this material
+                                const materialAnalyses = analyses.filter(
+                                  a => a.material_id === materialId && 
+                                  a.major_topics.includes(group.topic)
+                                );
+                                const visualTexts = materialAnalyses.flatMap(a => a.visual_elements);
+
+                                return (
+                                  <div key={materialId} className="flex gap-3 p-3 bg-muted/30 rounded-lg">
+                                    <div 
+                                      className="flex-shrink-0 w-32 h-32 cursor-pointer rounded-md overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
+                                      onClick={() => handleOpenMaterial(materialId)}
+                                    >
+                                      <img 
+                                        src={imageUrl} 
+                                        alt={material.file_name}
+                                        className="w-full h-full object-contain"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs text-muted-foreground mb-2">
+                                        {material.file_name}
+                                      </p>
+                                      <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
+                                        {visualTexts.map((element, idx) => (
+                                          <li key={idx} className="line-clamp-2">{element}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Continuous Text */}
                         <div className="prose prose-sm max-w-none">
                           <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -381,6 +529,20 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* Page Thumbnail */}
+                        {analysis.material_id && materialUrls.get(analysis.material_id) && (
+                          <div 
+                            className="w-full max-h-[300px] flex justify-center cursor-pointer rounded-lg overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
+                            onClick={() => handleOpenMaterial(analysis.material_id)}
+                          >
+                            <img 
+                              src={materialUrls.get(analysis.material_id)} 
+                              alt={`Page ${analysis.page_number}`}
+                              className="max-h-[300px] object-contain"
+                            />
+                          </div>
+                        )}
+
                         {/* Extracted Text */}
                         <div>
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -478,6 +640,20 @@ export function StudyMaterialViewer({ analyses, open, onClose }: StudyMaterialVi
             }
           </div>
         </div>
+
+        {/* Material Viewer for Fullscreen */}
+        {selectedMaterial !== null && (
+          <MaterialViewer
+            materials={materials}
+            analyses={analyses}
+            initialIndex={selectedMaterial}
+            open={viewerOpen}
+            onClose={() => {
+              setViewerOpen(false);
+              setSelectedMaterial(null);
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -553,6 +553,7 @@ const Collection = () => {
 
         <StudyMaterialViewer 
           analyses={analyses}
+          collectionId={id}
           open={showViewer}
           onClose={() => setShowViewer(false)}
         />
