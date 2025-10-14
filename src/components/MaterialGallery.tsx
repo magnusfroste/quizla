@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { ImageIcon } from "lucide-react";
+import { MaterialTypeDialog } from "./MaterialTypeDialog";
 
 interface Material {
   id: string;
@@ -10,12 +11,14 @@ interface Material {
   mime_type: string | null;
   file_size: number | null;
   storage_path: string;
+  material_type: 'content' | 'learning_objectives' | 'reference';
 }
 
 interface MaterialGalleryProps {
   materials: Material[];
   analyses: any[];
   onMaterialClick: (material: Material, index: number) => void;
+  onTypeChange?: (materialId: string, newType: 'content' | 'learning_objectives' | 'reference') => Promise<void>;
 }
 
 // Cache for signed URLs to avoid repeated API calls
@@ -46,9 +49,11 @@ async function getSignedUrl(storagePath: string): Promise<string> {
   throw new Error('Failed to get signed URL');
 }
 
-export function MaterialGallery({ materials, analyses, onMaterialClick }: MaterialGalleryProps) {
+export function MaterialGallery({ materials, analyses, onMaterialClick, onTypeChange }: MaterialGalleryProps) {
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map());
   const [loadingUrls, setLoadingUrls] = useState(true);
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchUrls = async () => {
@@ -70,6 +75,29 @@ export function MaterialGallery({ materials, analyses, onMaterialClick }: Materi
     fetchUrls();
   }, [materials]);
 
+  const handleBadgeClick = (e: React.MouseEvent, material: Material) => {
+    e.stopPropagation();
+    setSelectedMaterial(material);
+    setDialogOpen(true);
+  };
+
+  const handleSaveType = async (materialId: string, newType: 'content' | 'learning_objectives' | 'reference') => {
+    if (onTypeChange) {
+      await onTypeChange(materialId, newType);
+    }
+  };
+
+  const getTypeBadge = (type: 'content' | 'learning_objectives' | 'reference') => {
+    switch (type) {
+      case 'learning_objectives':
+        return { icon: '🎯', label: 'Goals', variant: 'secondary' as const };
+      case 'reference':
+        return { icon: '📌', label: 'Ref', variant: 'outline' as const };
+      default:
+        return null;
+    }
+  };
+
   if (loadingUrls) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -85,8 +113,9 @@ export function MaterialGallery({ materials, analyses, onMaterialClick }: Materi
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {materials.map((material, index) => {
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {materials.map((material, index) => {
         const isAnalyzed = analyses.some(a => a.material_id === material.id);
         const imageUrl = imageUrls.get(material.id);
         
@@ -115,11 +144,27 @@ export function MaterialGallery({ materials, analyses, onMaterialClick }: Materi
                 </div>
                 
                 {/* Status Badge */}
-                <div className="absolute top-2 right-2">
-                  <Badge variant={isAnalyzed ? "default" : "secondary"} className="text-xs">
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <Badge 
+                    variant={isAnalyzed ? "default" : "secondary"} 
+                    className="text-xs cursor-pointer hover:opacity-80"
+                    onClick={(e) => handleBadgeClick(e, material)}
+                  >
                     {isAnalyzed ? "✓ Analyzed" : "⏳ Pending"}
                   </Badge>
                 </div>
+                
+                {/* Type Badge */}
+                {getTypeBadge(material.material_type) && (
+                  <div className="absolute top-2 left-2">
+                    <Badge 
+                      variant={getTypeBadge(material.material_type)!.variant}
+                      className="text-xs"
+                    >
+                      {getTypeBadge(material.material_type)!.icon} {getTypeBadge(material.material_type)!.label}
+                    </Badge>
+                  </div>
+                )}
                 
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
@@ -132,6 +177,14 @@ export function MaterialGallery({ materials, analyses, onMaterialClick }: Materi
           </div>
         );
       })}
-    </div>
+      </div>
+
+      <MaterialTypeDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        material={selectedMaterial}
+        onSave={handleSaveType}
+      />
+    </>
   );
 }

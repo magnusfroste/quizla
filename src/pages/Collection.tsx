@@ -20,6 +20,7 @@ interface Material {
   mime_type: string | null;
   file_size: number | null;
   storage_path: string;
+  material_type: 'content' | 'learning_objectives' | 'reference';
 }
 
 const Collection = () => {
@@ -68,7 +69,7 @@ const Collection = () => {
     try {
       const { data, error } = await (supabase as any)
         .from('collections')
-        .select('*, materials(*)')
+        .select('*, materials(id, file_name, mime_type, file_size, storage_path, material_type, created_at, collection_id)')
         .eq('id', id)
         .maybeSingle();
 
@@ -319,6 +320,34 @@ const Collection = () => {
     }
   };
 
+  const handleMaterialTypeChange = async (
+    materialId: string,
+    newType: 'content' | 'learning_objectives' | 'reference'
+  ) => {
+    try {
+      const { error } = await supabase
+        .from('materials')
+        .update({ material_type: newType })
+        .eq('id', materialId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Material type updated',
+        description: 'The material category has been changed.',
+      });
+
+      await load();
+    } catch (e: any) {
+      console.error('Failed to update material type', e);
+      toast({
+        title: 'Update failed',
+        description: e?.message || 'Could not update material type',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleExportPDF = async () => {
     if (analyses.length === 0) {
       toast({
@@ -480,6 +509,7 @@ const Collection = () => {
                       setMaterialViewerIndex(index);
                       setMaterialViewerOpen(true);
                     }}
+                    onTypeChange={handleMaterialTypeChange}
                   />
                 ) : (
                   <p className="text-muted-foreground">No materials yet. Add files to generate a better quiz.</p>
