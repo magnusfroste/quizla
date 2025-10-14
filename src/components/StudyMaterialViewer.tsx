@@ -131,7 +131,13 @@ export function StudyMaterialViewer({ analyses, collectionId, open, onClose }: S
   const groupAnalysesByTopic = (): TopicGroup[] => {
     const topicMap = new Map<string, TopicGroup>();
 
-    analyses.forEach(analysis => {
+    // Filter to only content type materials first
+    const contentAnalyses = analyses.filter(analysis => {
+      const material = materials.find(m => m.id === analysis.material_id);
+      return material && material.material_type === 'content';
+    });
+
+    contentAnalyses.forEach(analysis => {
       analysis.major_topics.forEach(topic => {
         if (!topicMap.has(topic)) {
           topicMap.set(topic, {
@@ -205,9 +211,14 @@ export function StudyMaterialViewer({ analyses, collectionId, open, onClose }: S
 
   const topicGroups = groupAnalysesByTopic();
 
-  // Get all unique topics
+  // Get all unique topics from content materials only
+  const contentAnalyses = analyses.filter(analysis => {
+    const material = materials.find(m => m.id === analysis.material_id);
+    return material && material.material_type === 'content';
+  });
+  
   const allTopics = Array.from(
-    new Set(analyses.flatMap(a => a.major_topics))
+    new Set(contentAnalyses.flatMap(a => a.major_topics))
   ).sort();
 
   // Filter topic groups based on search and selected topics
@@ -222,8 +233,8 @@ export function StudyMaterialViewer({ analyses, collectionId, open, onClose }: S
     return matchesSearch && matchesTopics;
   });
 
-  // Filter analyses based on search and topics (for page view)
-  const filteredAnalyses = analyses.filter(analysis => {
+  // Filter analyses based on search and topics (for page view) - content materials only
+  const filteredAnalyses = contentAnalyses.filter(analysis => {
     const matchesSearch = searchQuery === "" || 
       analysis.extracted_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
       analysis.major_topics.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||

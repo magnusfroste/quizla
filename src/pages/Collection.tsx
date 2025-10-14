@@ -364,8 +364,14 @@ const Collection = () => {
         description: 'Please wait...',
       });
 
+      // Filter to only include content type materials
+      const contentAnalyses = analyses.filter(analysis => {
+        const material = collection.materials?.find(m => m.id === analysis.material_id);
+        return material?.material_type === 'content';
+      });
+
       await generateStudyMaterialPDF(
-        analyses,
+        contentAnalyses,
         collection.title,
         collection.description
       );
