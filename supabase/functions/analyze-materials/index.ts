@@ -77,32 +77,61 @@ serve(async (req) => {
         continue;
       }
 
-      const analysisPrompt = `You are an expert content extractor analyzing study materials. Extract ALL information from this image in structured format.
+      // Determine material type for customized analysis
+      const materialType = material.material_type || 'content';
+      
+      let analysisPrompt = '';
+      
+      if (materialType === 'learning_objectives') {
+        analysisPrompt = `You are an expert educational content analyzer. This is a LEARNING OBJECTIVES or STUDY PLAN document.
 
-EXTRACTION TASKS:
-1. FULL TEXT EXTRACTION: Extract every word, sentence, and paragraph exactly as written
-2. TOPIC IDENTIFICATION: Identify the 2-3 main topics or subjects covered
-3. KEY CONCEPTS: List all important concepts, terms, and ideas mentioned
-4. DEFINITIONS: Extract any definitions found (term → definition pairs)
-5. FORMULAS/EQUATIONS: List all mathematical, chemical, or scientific formulas
-6. VISUAL ELEMENTS: Describe any diagrams, charts, tables, or illustrations
-7. EMPHASIS DETECTION: Note any bold text, underlined text, boxed content, or highlighted areas
-8. FOUNDATIONAL CHECK: Determine if this is foundational/introductory content
+TASK: Extract the learning goals, objectives, and requirements that students need to achieve.
 
-Return your analysis as valid JSON with this exact structure:
+LEARNING OBJECTIVES: List all learning goals, competencies, and skills mentioned
+TOPIC AREAS: Identify the main subject areas or topics covered
+KEY CONCEPTS: Extract specific concepts or knowledge areas students must learn
+
+Return valid JSON:
 {
-  "extracted_text": "Complete verbatim text from the image",
-  "major_topics": ["Topic 1", "Topic 2"],
-  "key_concepts": ["Concept A", "Concept B", "Concept C"],
-  "definitions": {
-    "Term 1": "Definition 1",
-    "Term 2": "Definition 2"
-  },
-  "formulas": ["Formula 1", "Formula 2"],
-  "visual_elements": ["Description of visual 1", "Description of visual 2"],
-  "emphasis_markers": ["Important point 1", "Key concept 2"],
+  "learning_objectives": ["objective1", "objective2"],
+  "major_topics": ["topic1", "topic2"],
+  "key_concepts": ["concept1", "concept2"],
+  "extracted_text": "brief summary of the objectives",
+  "is_foundational": false
+}`;
+      } else {
+        analysisPrompt = `You are an expert educational content analyzer. Analyze this study material and extract ALL information.
+
+IMPORTANT: Analyze from a STUDENT PERSPECTIVE. Focus on what students need to LEARN.
+
+TEXT EXTRACTION: Extract all text and reflow it into natural paragraphs. Remove artificial line breaks within sentences. Only keep paragraph breaks between distinct topics/sections. The output should read as flowing prose, not fragmented lines.
+
+TOPIC IDENTIFICATION: 
+- Identify 1-3 major topics (broad themes)
+- List 3-8 key concepts (specific ideas students must learn)
+- Mark if FOUNDATIONAL (basic) or ADVANCED
+
+DEFINITIONS: Extract terms with explanations as JSON:
+{"Term": "Definition"}
+
+FORMULAS: List mathematical/scientific formulas
+
+VISUAL ELEMENTS: Describe diagrams, charts, images (what they show, purpose)
+
+EMPHASIS: Note highlighted, bold, or emphasized content
+
+Return valid JSON:
+{
+  "extracted_text": "flowing text with natural paragraphs",
+  "major_topics": ["topic1", "topic2"],
+  "key_concepts": ["concept1", "concept2"],
+  "definitions": {"Term": "Definition"},
+  "formulas": ["formula1"],
+  "visual_elements": ["description"],
+  "emphasis_markers": ["important point"],
   "is_foundational": true
 }`;
+      }
 
       try {
         const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -164,13 +193,26 @@ Return your analysis as valid JSON with this exact structure:
           continue;
         }
 
+        // Normalize text by removing excessive line breaks
+        const normalizeText = (text: string): string => {
+          if (!text) return '';
+          return text
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .replace(/([.!?])\s+/g, '$1\n\n')
+            .trim();
+        };
+
         // Store analysis in database
         const { error: insertError } = await supabaseClient
           .from('material_analysis')
           .upsert({
             material_id: material.id,
             collection_id: collectionId,
-            extracted_text: analysis.extracted_text || '',
+            extracted_text: normalizeText(analysis.extracted_text || ''),
             major_topics: analysis.major_topics || [],
             key_concepts: analysis.key_concepts || [],
             definitions: analysis.definitions || {},
@@ -178,6 +220,7 @@ Return your analysis as valid JSON with this exact structure:
             visual_elements: analysis.visual_elements || [],
             emphasis_markers: analysis.emphasis_markers || [],
             is_foundational: analysis.is_foundational || false,
+            learning_objectives: analysis.learning_objectives || [],
             page_number: pageNumber,
             token_count: Math.round((analysis.extracted_text?.length || 0) / 4),
             analyzed_at: new Date().toISOString()

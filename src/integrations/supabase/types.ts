@@ -187,6 +187,7 @@ export type Database = {
           id: string
           is_foundational: boolean | null
           key_concepts: string[]
+          learning_objectives: string[] | null
           major_topics: string[]
           material_id: string
           page_number: number | null
@@ -204,6 +205,7 @@ export type Database = {
           id?: string
           is_foundational?: boolean | null
           key_concepts?: string[]
+          learning_objectives?: string[] | null
           major_topics?: string[]
           material_id: string
           page_number?: number | null
@@ -221,6 +223,7 @@ export type Database = {
           id?: string
           is_foundational?: boolean | null
           key_concepts?: string[]
+          learning_objectives?: string[] | null
           major_topics?: string[]
           material_id?: string
           page_number?: number | null
@@ -251,6 +254,7 @@ export type Database = {
           file_name: string
           file_size: number | null
           id: string
+          material_type: Database["public"]["Enums"]["material_type"]
           mime_type: string | null
           storage_path: string
         }
@@ -260,6 +264,7 @@ export type Database = {
           file_name: string
           file_size?: number | null
           id?: string
+          material_type?: Database["public"]["Enums"]["material_type"]
           mime_type?: string | null
           storage_path: string
         }
@@ -269,6 +274,7 @@ export type Database = {
           file_name?: string
           file_size?: number | null
           id?: string
+          material_type?: Database["public"]["Enums"]["material_type"]
           mime_type?: string | null
           storage_path?: string
         }
@@ -461,7 +467,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      material_type: "content" | "learning_objectives" | "reference"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -588,6 +594,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      material_type: ["content", "learning_objectives", "reference"],
+    },
   },
 } as const

@@ -99,15 +99,19 @@ export function StudyMaterialViewer({ analyses, collectionId, open, onClose }: S
 
       const { data: materialsData } = await supabase
         .from('materials')
-        .select('id, storage_path, file_name, mime_type, file_size')
+        .select('id, storage_path, file_name, mime_type, file_size, material_type')
         .in('id', materialIds);
 
       if (materialsData) {
-        setMaterials(materialsData);
+        // Filter out learning_objectives materials from study viewer
+        const contentMaterials = materialsData.filter(
+          m => m.material_type !== 'learning_objectives'
+        );
+        setMaterials(contentMaterials);
 
-        // Generate signed URLs
+        // Generate signed URLs only for content materials
         const urlMap = new Map<string, string>();
-        for (const material of materialsData) {
+        for (const material of contentMaterials) {
           try {
             const url = await getSignedUrl(material.storage_path);
             urlMap.set(material.id, url);
@@ -545,7 +549,7 @@ export function StudyMaterialViewer({ analyses, collectionId, open, onClose }: S
 
                         {/* Extracted Text */}
                         <div>
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                          <p className="text-sm whitespace-pre-line leading-relaxed">
                             {analysis.extracted_text}
                           </p>
                         </div>

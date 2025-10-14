@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface UploadItem {
   id: string;
@@ -10,15 +11,17 @@ interface UploadItem {
   status: 'pending' | 'compressing' | 'uploading' | 'complete' | 'error';
   progress: number;
   error?: string;
+  materialType?: 'content' | 'learning_objectives' | 'reference';
 }
 
 interface UploadProgressProps {
   uploads: UploadItem[];
   onCancel: (id: string) => void;
   onClose: () => void;
+  onTypeChange?: (id: string, type: 'content' | 'learning_objectives' | 'reference') => void;
 }
 
-export function UploadProgress({ uploads, onCancel, onClose }: UploadProgressProps) {
+export function UploadProgress({ uploads, onCancel, onClose, onTypeChange }: UploadProgressProps) {
   const allComplete = uploads.every(u => u.status === 'complete' || u.status === 'error');
   const hasErrors = uploads.some(u => u.status === 'error');
 
@@ -45,11 +48,27 @@ export function UploadProgress({ uploads, onCancel, onClose }: UploadProgressPro
                 className="w-12 h-12 rounded object-cover flex-shrink-0"
               />
               
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 space-y-1">
                 <p className="text-xs truncate">{item.file.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {(item.file.size / 1024 / 1024).toFixed(1)} MB
                 </p>
+                
+                {item.status === 'pending' && onTypeChange && (
+                  <Select 
+                    value={item.materialType || 'content'} 
+                    onValueChange={(value) => onTypeChange(item.id, value as any)}
+                  >
+                    <SelectTrigger className="h-6 text-xs">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="content">Study Material</SelectItem>
+                      <SelectItem value="learning_objectives">Learning Goals</SelectItem>
+                      <SelectItem value="reference">Reference</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 
                 {item.status === 'compressing' && (
                   <p className="text-xs text-blue-500">Optimizing...</p>

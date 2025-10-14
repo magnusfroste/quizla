@@ -46,6 +46,7 @@ const Collection = () => {
     status: 'pending' | 'compressing' | 'uploading' | 'complete' | 'error';
     progress: number;
     error?: string;
+    materialType: 'content' | 'learning_objectives' | 'reference';
   }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -144,6 +145,7 @@ const Collection = () => {
           preview,
           status: 'pending' as const,
           progress: 0,
+          materialType: 'content' as const,
         };
       })
     );
@@ -201,6 +203,7 @@ const Collection = () => {
               mime_type: item.file.type,
               file_size: compressedFile.size,
               storage_path: filePath,
+              material_type: item.materialType,
             });
 
           if (insertError) throw insertError;
@@ -571,6 +574,11 @@ const Collection = () => {
             uploads={uploadItems}
             onCancel={handleCancelUpload}
             onClose={handleCloseUploadProgress}
+            onTypeChange={(itemId, type) => {
+              setUploadItems(prev => 
+                prev.map(u => u.id === itemId ? { ...u, materialType: type } : u)
+              );
+            }}
           />
         )}
 
