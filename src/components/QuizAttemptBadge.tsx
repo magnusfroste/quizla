@@ -10,9 +10,8 @@ interface QuizAttemptBadgeProps {
 export const QuizAttemptBadge = ({ attemptCount, className }: QuizAttemptBadgeProps) => {
   if (attemptCount === 0) {
     return (
-      <Badge variant="outline" className={cn("text-xs", className)}>
-        <Users className="h-3 w-3 mr-1" />
-        Be the first to try
+      <Badge variant="outline" className={cn("text-xs px-2", className)}>
+        New
       </Badge>
     );
   }
@@ -23,14 +22,14 @@ export const QuizAttemptBadge = ({ attemptCount, className }: QuizAttemptBadgePr
     <Badge 
       variant={isTrending ? "default" : "secondary"}
       className={cn(
-        "text-xs font-medium",
+        "text-xs font-medium px-2",
         isTrending && "bg-gradient-to-r from-primary to-primary-dark",
         className
       )}
     >
       {isTrending && "🔥 "}
       <Users className="h-3 w-3 mr-1" />
-      {attemptCount} {attemptCount === 1 ? "student" : "students"} completed
+      {attemptCount}
     </Badge>
   );
 };

@@ -39,10 +39,10 @@ export function Header({ onSignOut, showMenu = true }: HeaderProps) {
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/profile')}
-              className="text-muted-foreground hover:text-foreground"
+              className="hidden md:flex text-muted-foreground hover:text-foreground"
             >
               <User className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Profile</span>
+              Profile
             </Button>
             {onSignOut && (
               <Button 
