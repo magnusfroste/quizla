@@ -11,6 +11,7 @@ import { Search, BookOpen, Brain, Lightbulb, List, Grid, Filter, Image as ImageI
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MaterialAnalysis {
   id: string;
@@ -92,6 +93,7 @@ export default function Study() {
   const [currentReadingPage, setCurrentReadingPage] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Load collection and analyses
   useEffect(() => {
@@ -452,10 +454,10 @@ export default function Study() {
                 onClick={() => setShowFilters(!showFilters)}
                 className="relative"
               >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
+                <Filter className={isMobile ? "h-4 w-4" : "h-4 w-4 mr-2"} />
+                {!isMobile && "Filters"}
                 {selectedTopics.size > 0 && (
-                  <Badge variant="default" className="ml-2 h-5 px-1.5 text-xs">
+                  <Badge variant="default" className={isMobile ? "ml-1 h-5 px-1.5 text-xs" : "ml-2 h-5 px-1.5 text-xs"}>
                     {selectedTopics.size}
                   </Badge>
                 )}
@@ -469,18 +471,18 @@ export default function Study() {
               >
                 {isLoadingAudio && currentReadingPage === "all" ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Laddar...
+                    <Loader2 className={isMobile ? "h-4 w-4 animate-spin" : "h-4 w-4 mr-2 animate-spin"} />
+                    {!isMobile && "Laddar..."}
                   </>
                 ) : isReading && currentReadingPage === "all" ? (
                   <>
-                    <VolumeX className="h-4 w-4 mr-2" />
-                    Stoppa
+                    <VolumeX className={isMobile ? "h-4 w-4" : "h-4 w-4 mr-2"} />
+                    {!isMobile && "Stoppa"}
                   </>
                 ) : (
                   <>
-                    <Volume2 className="h-4 w-4 mr-2" />
-                    Läs för mig
+                    <Volume2 className={isMobile ? "h-4 w-4" : "h-4 w-4 mr-2"} />
+                    {!isMobile && "Läs för mig"}
                   </>
                 )}
               </Button>
@@ -494,8 +496,8 @@ export default function Study() {
                 onClick={() => setViewMode("topics")}
                 className="h-8 px-3"
               >
-                <Grid className="h-4 w-4 mr-2" />
-                Topics
+                <Grid className={isMobile ? "h-4 w-4" : "h-4 w-4 mr-2"} />
+                {!isMobile && "Topics"}
               </Button>
               <Button
                 variant={viewMode === "pages" ? "secondary" : "ghost"}
@@ -503,8 +505,8 @@ export default function Study() {
                 onClick={() => setViewMode("pages")}
                 className="h-8 px-3"
               >
-                <List className="h-4 w-4 mr-2" />
-                Pages
+                <List className={isMobile ? "h-4 w-4" : "h-4 w-4 mr-2"} />
+                {!isMobile && "Pages"}
               </Button>
             </div>
           </div>
