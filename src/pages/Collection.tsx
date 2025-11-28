@@ -311,7 +311,7 @@ const Collection = () => {
     setAnalysisProgress({ current_page: 0, total_pages: materialCount, current_file_name: null });
 
     // Set up realtime subscription for progress updates
-    const channel = supabase
+    const progressChannel = supabase
       .channel(`analysis-progress-${id}`)
       .on('postgres_changes', {
         event: '*',
@@ -326,6 +326,22 @@ const Collection = () => {
             total_pages: payload.new.total_pages,
             current_file_name: payload.new.current_file_name,
           });
+        }
+      })
+      .subscribe();
+
+    // Set up realtime subscription for analysis results (updates "Analyzed" badges in real-time)
+    const analysisChannel = supabase
+      .channel(`material-analysis-${id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'material_analysis',
+        filter: `collection_id=eq.${id}`
+      }, (payload: any) => {
+        console.log('New analysis:', payload);
+        if (payload.new) {
+          setAnalyses(prev => [...prev, payload.new]);
         }
       })
       .subscribe();
@@ -351,8 +367,9 @@ const Collection = () => {
     } finally {
       setAnalyzing(false);
       setAnalysisProgress(null);
-      // Clean up subscription
-      supabase.removeChannel(channel);
+      // Clean up subscriptions
+      supabase.removeChannel(progressChannel);
+      supabase.removeChannel(analysisChannel);
     }
   };
 
