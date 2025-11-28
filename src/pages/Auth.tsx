@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +9,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Zap, ArrowLeft } from "lucide-react";
 
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signupSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long"),
+});
+
+type FieldErrors = {
+  email?: string;
+  password?: string;
+  fullName?: string;
+};
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -27,14 +47,44 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
+  const validateForm = (): boolean => {
+    setErrors({});
+    
+    try {
+      if (isLogin) {
+        loginSchema.parse({ email, password });
+      } else {
+        signupSchema.parse({ email, password, fullName });
+      }
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: FieldErrors = {};
+        error.errors.forEach((err) => {
+          const field = err.path[0] as keyof FieldErrors;
+          if (field) {
+            fieldErrors[field] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      }
+      return false;
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
 
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
 
@@ -47,11 +97,11 @@ const Auth = () => {
         navigate("/dashboard");
       } else {
         const { error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             data: {
-              full_name: fullName,
+              full_name: fullName.trim(),
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
@@ -74,6 +124,22 @@ const Auth = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Clear field error when user types
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+  };
+
+  const handleFullNameChange = (value: string) => {
+    setFullName(value);
+    if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: undefined }));
   };
 
   return (
@@ -124,10 +190,12 @@ const Auth = () => {
                     type="text"
                     placeholder="Your name"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required={!isLogin}
-                    className="h-12"
+                    onChange={(e) => handleFullNameChange(e.target.value)}
+                    className={`h-12 ${errors.fullName ? 'border-destructive' : ''}`}
                   />
+                  {errors.fullName && (
+                    <p className="text-sm text-destructive">{errors.fullName}</p>
+                  )}
                 </div>
               )}
               <div className="space-y-2">
@@ -137,10 +205,12 @@ const Auth = () => {
                   type="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12"
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  className={`h-12 ${errors.email ? 'border-destructive' : ''}`}
                 />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -149,11 +219,15 @@ const Auth = () => {
                   type="password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="h-12"
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  className={`h-12 ${errors.password ? 'border-destructive' : ''}`}
                 />
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
+                {!isLogin && !errors.password && (
+                  <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+                )}
               </div>
               <Button
                 type="submit"
@@ -165,7 +239,10 @@ const Auth = () => {
             </form>
             <div className="mt-6 text-center">
               <button
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setErrors({});
+                }}
                 className="text-sm text-primary hover:underline font-medium"
               >
                 {isLogin
