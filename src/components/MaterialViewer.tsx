@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, X, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import { useTouchSwipe } from "@/hooks/use-touch-swipe";
 import { MaterialTypeDialog } from "./MaterialTypeDialog";
 
@@ -154,14 +154,9 @@ export function MaterialViewer({
             <DialogTitle className="text-lg truncate max-w-md">
               {currentMaterial.file_name}
             </DialogTitle>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">
-                {currentIndex + 1} / {materials.length}
-              </span>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <span className="text-sm text-muted-foreground">
+              {currentIndex + 1} / {materials.length}
+            </span>
           </div>
         </DialogHeader>
 
