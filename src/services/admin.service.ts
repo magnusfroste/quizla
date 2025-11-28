@@ -7,6 +7,13 @@ export interface AppStats {
   totalAttempts: number;
 }
 
+export interface ConfigItem {
+  key: string;
+  value: string;
+  description: string | null;
+  updated_at: string;
+}
+
 export const adminService = {
   async checkIsAdmin(userId: string): Promise<boolean> {
     // Using type assertion since has_role function was just created
@@ -37,5 +44,26 @@ export const adminService = {
       totalQuizzes: quizzesResult.count ?? 0,
       totalAttempts: attemptsResult.count ?? 0,
     };
+  },
+
+  async getConfig(): Promise<ConfigItem[]> {
+    const { data, error } = await (supabase as any)
+      .from('app_config')
+      .select('*')
+      .order('key');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async updateConfig(key: string, value: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { error } = await (supabase as any)
+      .from('app_config')
+      .update({ value, updated_by: user?.id })
+      .eq('key', key);
+
+    if (error) throw error;
   },
 };

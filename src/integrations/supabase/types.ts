@@ -97,6 +97,30 @@ export type Database = {
           },
         ]
       }
+      app_config: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       attempts: {
         Row: {
           completed_at: string | null
@@ -336,6 +360,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          plan: Database["public"]["Enums"]["user_plan"] | null
           updated_at: string
         }
         Insert: {
@@ -344,6 +369,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          plan?: Database["public"]["Enums"]["user_plan"] | null
           updated_at?: string
         }
         Update: {
@@ -352,6 +378,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          plan?: Database["public"]["Enums"]["user_plan"] | null
           updated_at?: string
         }
         Relationships: []
@@ -489,6 +516,48 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan: Database["public"]["Enums"]["user_plan"]
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["user_plan"]
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["user_plan"]
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -538,6 +607,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       material_type: "content" | "learning_objectives" | "reference"
+      user_plan: "free" | "student" | "pro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -667,6 +737,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       material_type: ["content", "learning_objectives", "reference"],
+      user_plan: ["free", "student", "pro"],
     },
   },
 } as const

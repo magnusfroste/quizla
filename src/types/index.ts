@@ -141,3 +141,29 @@ export interface AnalysisProgress {
   total_pages: number;
   current_file_name: string | null;
 }
+
+// Subscription types
+export type UserPlan = 'free' | 'student' | 'pro';
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  plan: UserPlan;
+  status: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// App config types
+export interface AppConfigItem {
+  key: string;
+  value: string;
+  description: string | null;
+  updated_at: string;
+  updated_by: string | null;
+}
