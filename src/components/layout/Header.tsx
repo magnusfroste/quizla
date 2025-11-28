@@ -27,7 +27,7 @@ export function Header({ onSignOut, showMenu = true }: HeaderProps) {
           </div>
           <div>
             <h1 className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-              QuizGeni
+              Quizla
             </h1>
             <p className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">
               Study Smarter
