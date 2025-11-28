@@ -37,12 +37,11 @@ export function Header({ onSignOut, showMenu = true }: HeaderProps) {
           <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
-              size="sm"
+              size="icon"
               onClick={() => navigate('/profile')}
-              className="hidden md:flex text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <User className="h-4 w-4 mr-2" />
-              Profile
+              <User className="h-5 w-5" />
             </Button>
             {onSignOut && (
               <Button 

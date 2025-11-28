@@ -13,7 +13,6 @@ import { TopicBreakdown } from "@/components/TopicBreakdown";
 import { ShareQuizDialog } from "@/components/ShareQuizDialog";
 import { QuizAttemptBadge } from "@/components/QuizAttemptBadge";
 import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { LoadingSpinner } from "@/components/layout/LoadingSpinner";
 
@@ -322,8 +321,6 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
-
-      <BottomNav />
 
       <CreateCollectionDialog
         open={createOpen}
