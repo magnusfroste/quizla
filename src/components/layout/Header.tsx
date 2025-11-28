@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Zap, LogOut, Menu } from "lucide-react";
+import { Zap, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
@@ -33,16 +33,29 @@ export function Header({ onSignOut, showMenu = true }: HeaderProps) {
           </div>
         </div>
 
-        {showMenu && onSignOut && (
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={onSignOut}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </Button>
+        {showMenu && (
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/profile')}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <User className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Profile</span>
+            </Button>
+            {onSignOut && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={onSignOut}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </header>
