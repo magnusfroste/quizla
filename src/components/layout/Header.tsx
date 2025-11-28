@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Zap, LogOut, User } from "lucide-react";
+import { Zap, LogOut, User, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAdmin } from "@/hooks/useAdmin";
 
 interface HeaderProps {
   onSignOut?: () => void;
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 export function Header({ onSignOut, showMenu = true }: HeaderProps) {
   const navigate = useNavigate();
+  const { isAdmin } = useAdmin();
 
   return (
     <header className="border-b border-border/50 bg-card/80 backdrop-blur-xl sticky top-0 z-50">
@@ -35,6 +37,16 @@ export function Header({ onSignOut, showMenu = true }: HeaderProps) {
 
         {showMenu && (
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate('/admin')}
+                className="text-primary hover:text-primary/80"
+              >
+                <Shield className="h-5 w-5" />
+              </Button>
+            )}
             <Button 
               variant="ghost" 
               size="icon"
