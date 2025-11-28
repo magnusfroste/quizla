@@ -1,7 +1,7 @@
 {
-  "name": "QuizGeni",
-  "short_name": "QuizGeni",
-  "description": "Become a Genius from Your Own Quizzes - AI-powered study companion",
+  "name": "Quizla",
+  "short_name": "Quizla",
+  "description": "Snap. Quiz. Ace. - AI-powered study companion",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f0f12",

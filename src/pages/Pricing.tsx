@@ -34,7 +34,7 @@ export default function Pricing() {
       id: 'free',
       name: 'Free',
       price: 0,
-      description: 'Perfekt för att testa QuizGeni',
+      description: 'Perfekt för att testa Quizla',
       features: [
         { text: `${config.free_max_collections} samlingar`, included: true },
         { text: `${config.free_max_materials_total} sidor totalt`, included: true },
@@ -102,7 +102,7 @@ export default function Pricing() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Välj din plan</h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Lås upp din fulla potential som student med QuizGeni
+            Lås upp din fulla potential som student med Quizla
           </p>
         </div>
 

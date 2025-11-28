@@ -28,7 +28,7 @@ const Index = () => {
 
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 animate-slide-up stagger-1">
             <span className="text-gradient">Snap. Quiz. </span>
-            <span className="text-foreground">Genius.</span>
+            <span className="text-foreground">Ace.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl mx-auto animate-slide-up stagger-2">
@@ -65,7 +65,7 @@ const Index = () => {
       {/* How it works */}
       <section className="container mx-auto px-4 py-16">
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
-          How QuizGeni Works
+          How Quizla Works
         </h2>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
@@ -117,7 +117,7 @@ const Index = () => {
                 Study Smarter, Not Harder
               </h2>
               <p className="text-muted-foreground mb-6">
-                QuizGeni creates quizzes that test what matters most. Share with classmates, track your progress, and master any subject.
+                Quizla creates quizzes that test what matters most. Share with classmates, track your progress, and master any subject.
               </p>
               <Button
                 size="lg"
@@ -150,10 +150,10 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Zap className="h-5 w-5 text-primary" />
-            <span className="font-bold">QuizGeni</span>
+            <span className="font-bold">Quizla</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} QuizGeni. Helping students become geniuses.
+            © {new Date().getFullYear()} Quizla. Snap. Quiz. Ace.
           </p>
         </div>
       </footer>

@@ -125,7 +125,7 @@ export default function Admin() {
             <Shield className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">QuizGeni Admin</h1>
+            <h1 className="text-2xl font-bold">Quizla Admin</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>

@@ -171,7 +171,7 @@ const Quiz = () => {
         setAttemptCount(0);
       }
 
-      document.title = `${quizData.title} | QuizGeni`;
+      document.title = `${quizData.title} | Quizla`;
     } catch (e: any) {
       console.error('Failed to load quiz', e);
       toast({
@@ -362,7 +362,7 @@ const Quiz = () => {
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
                   <p className="text-sm font-medium mb-1">
                     <Users className="h-4 w-4 inline mr-1" />
-                    Join {Math.max(attemptCount + 234, 250)} students already using QuizGeni
+                    Join {Math.max(attemptCount + 234, 250)} students already using Quizla
                   </p>
                 </div>
 

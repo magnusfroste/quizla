@@ -111,7 +111,7 @@ const Auth = () => {
 
         toast({
           title: "Account created!",
-          description: "Welcome to QuizGeni. Let's start learning!",
+          description: "Welcome to Quizla. Let's start learning!",
         });
         navigate("/dashboard");
       }
@@ -171,7 +171,7 @@ const Auth = () => {
             </div>
             <div>
               <CardTitle className="text-2xl font-bold">
-                {isLogin ? "Welcome back" : "Join QuizGeni"}
+                {isLogin ? "Welcome back" : "Join Quizla"}
               </CardTitle>
               <CardDescription className="mt-1">
                 {isLogin
