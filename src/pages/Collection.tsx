@@ -129,6 +129,11 @@ const Collection = () => {
   };
 
   const materialCount = useMemo(() => collection?.materials?.length || 0, [collection]);
+  const unanalyzedCount = useMemo(() => {
+    if (!collection?.materials) return 0;
+    const analyzedMaterialIds = new Set(analyses.map(a => a.material_id));
+    return collection.materials.filter((m: Material) => !analyzedMaterialIds.has(m.id)).length;
+  }, [collection, analyses]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -231,8 +236,9 @@ const Collection = () => {
 
       if (uploadedCount > 0) {
         toast({
-          title: 'Upload successful',
-          description: `${uploadedCount} file${uploadedCount === 1 ? '' : 's'} uploaded and optimized`,
+          title: '✓ Images uploaded!',
+          description: 'Next step: Click "Read & Analyze" to extract text from your images.',
+          duration: 6000,
         });
         await load();
       }
@@ -578,24 +584,50 @@ const Collection = () => {
           </div>
 
           <div className="space-y-6">
+            {/* Knowledge Base Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Knowledge Base</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" />
+                  Knowledge Base
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
-                  className="w-full"
-                  onClick={handleAnalyzeMaterials}
-                  disabled={analyzing || materialCount === 0}
-                >
-                  <Brain className="h-4 w-4 mr-2" />
-                  {analyzing && analysisProgress 
-                    ? `Analyzing... (${analysisProgress.current_page}/${analysisProgress.total_pages}) ${Math.round((analysisProgress.current_page / analysisProgress.total_pages) * 100)}%`
-                    : analyzing 
-                    ? 'Starting...' 
-                    : 'Extract Content'}
-                </Button>
+                {/* Read & Analyze Button with pending indicator */}
+                <div className="relative">
+                  <Button 
+                    className={`w-full ${analyzing ? 'animate-pulse' : ''}`}
+                    onClick={handleAnalyzeMaterials}
+                    disabled={analyzing || materialCount === 0}
+                  >
+                    <Brain className="h-4 w-4 mr-2" />
+                    {analyzing && analysisProgress 
+                      ? `Reading... (${analysisProgress.current_page}/${analysisProgress.total_pages}) ${Math.round((analysisProgress.current_page / analysisProgress.total_pages) * 100)}%`
+                      : analyzing 
+                      ? 'Starting...' 
+                      : 'Read & Analyze'}
+                  </Button>
+                  {/* Pending badge for unanalyzed materials */}
+                  {!analyzing && unanalyzedCount > 0 && (
+                    <span className="absolute -top-2 -right-2 h-6 min-w-6 px-1.5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
+                      {unanalyzedCount}
+                    </span>
+                  )}
+                </div>
 
+                {/* Helper text for button state */}
+                {materialCount === 0 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    📷 Add images first to extract content
+                  </p>
+                )}
+                {materialCount > 0 && unanalyzedCount > 0 && !analyzing && (
+                  <p className="text-xs text-orange-500 text-center font-medium">
+                    {unanalyzedCount} new image{unanalyzedCount === 1 ? '' : 's'} ready to analyze
+                  </p>
+                )}
+
+                {/* Progress bar during analysis */}
                 {analyzing && analysisProgress && (
                   <div className="space-y-2">
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -605,15 +637,21 @@ const Collection = () => {
                       />
                     </div>
                     {analysisProgress.current_file_name && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        Analyzing: {analysisProgress.current_file_name}
+                      <p className="text-xs text-muted-foreground truncate text-center">
+                        Reading: {analysisProgress.current_file_name}
                       </p>
                     )}
                   </div>
                 )}
 
+                {/* Study materials actions (only show when content extracted) */}
                 {analyses.length > 0 && (
                   <>
+                    <div className="border-t pt-3 mt-3">
+                      <p className="text-xs text-green-600 dark:text-green-400 mb-2 text-center font-medium">
+                        ✓ {analyses.length} page{analyses.length === 1 ? '' : 's'} in knowledge base
+                      </p>
+                    </div>
                     <Button 
                       variant="outline"
                       className="w-full"
@@ -635,30 +673,41 @@ const Collection = () => {
                     </Button>
                   </>
                 )}
-
-                {materialCount === 0 && (
-                  <p className="text-xs text-muted-foreground">Add materials to extract content.</p>
-                )}
-
-                {analyses.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    ✓ {analyses.length} page{analyses.length === 1 ? '' : 's'} analyzed
-                  </p>
-                )}
               </CardContent>
             </Card>
 
+            {/* Generate Quiz Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Generate Quiz</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Generate Quiz
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" onClick={handleGenerateQuiz} disabled={generating || analyses.length === 0}>
+                <Button 
+                  className="w-full" 
+                  onClick={handleGenerateQuiz} 
+                  disabled={generating || analyses.length === 0}
+                >
                   <Sparkles className="h-4 w-4 mr-2" />
                   {generating ? 'Generating…' : 'Generate Quiz'}
                 </Button>
-                {analyses.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Extract content first to enable quiz generation.</p>
+                {/* Clarified disabled state messages */}
+                {materialCount === 0 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    📷 Add images first
+                  </p>
+                )}
+                {materialCount > 0 && analyses.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    👆 Read & Analyze your images first
+                  </p>
+                )}
+                {analyses.length > 0 && !generating && (
+                  <p className="text-xs text-green-600 dark:text-green-400 text-center">
+                    ✓ Ready to generate quiz
+                  </p>
                 )}
               </CardContent>
             </Card>
