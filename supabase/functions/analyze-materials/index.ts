@@ -112,14 +112,26 @@ serve(async (req) => {
       
       let analysisPrompt = '';
       
+      // Language instruction to ensure output matches source language
+      const languageInstruction = `⚡ CRITICAL LANGUAGE RULE:
+- FIRST: Detect the language of the document/image (Swedish, English, German, etc.)
+- ALL output fields MUST be in the SAME language as the source material
+- Do NOT translate anything to English
+- If source is Swedish → respond in Swedish
+- If source is English → respond in English
+- This applies to: topics, concepts, definitions, objectives, visual descriptions, everything
+
+`;
+
       if (materialType === 'learning_objectives') {
         analysisPrompt = `You are an expert educational content analyzer. This is a LEARNING OBJECTIVES or STUDY PLAN document.
 
+${languageInstruction}
 TASK: Extract the learning goals, objectives, and requirements that students need to achieve.
 
-LEARNING OBJECTIVES: List all learning goals, competencies, and skills mentioned
-TOPIC AREAS: Identify the main subject areas or topics covered
-KEY CONCEPTS: Extract specific concepts or knowledge areas students must learn
+LEARNING OBJECTIVES: List all learning goals, competencies, and skills mentioned (in source language)
+TOPIC AREAS: Identify the main subject areas or topics covered (in source language)
+KEY CONCEPTS: Extract specific concepts or knowledge areas students must learn (in source language)
 
 Return valid JSON:
 {
@@ -132,23 +144,24 @@ Return valid JSON:
       } else {
         analysisPrompt = `You are an expert educational content analyzer. Analyze this study material and extract ALL information.
 
+${languageInstruction}
 IMPORTANT: Analyze from a STUDENT PERSPECTIVE. Focus on what students need to LEARN.
 
 TEXT EXTRACTION: Extract all text and reflow it into natural paragraphs. Remove artificial line breaks within sentences. Only keep paragraph breaks between distinct topics/sections. The output should read as flowing prose, not fragmented lines.
 
 TOPIC IDENTIFICATION: 
-- Identify 1-3 major topics (broad themes)
-- List 3-8 key concepts (specific ideas students must learn)
+- Identify 1-3 major topics (broad themes) - in source language
+- List 3-8 key concepts (specific ideas students must learn) - in source language
 - Mark if FOUNDATIONAL (basic) or ADVANCED
 
-DEFINITIONS: Extract terms with explanations as JSON:
+DEFINITIONS: Extract terms with explanations as JSON (in source language):
 {"Term": "Definition"}
 
 FORMULAS: List mathematical/scientific formulas
 
-VISUAL ELEMENTS: Only note the TYPE of visual (e.g., "Image: Map", "Diagram: Process flow", "Chart: Statistics"). Do NOT describe content in detail.
+VISUAL ELEMENTS: Only note the TYPE of visual (e.g., "Bild: Karta", "Diagram: Processflöde"). Use source language. Do NOT describe content in detail.
 
-EMPHASIS: Note highlighted, bold, or emphasized content
+EMPHASIS: Note highlighted, bold, or emphasized content (in source language)
 
 Return valid JSON:
 {
