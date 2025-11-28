@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, LogOut, BookOpen, Users, Trophy, Target, TrendingUp, PlayCircle, Share2 } from "lucide-react";
+import { Plus, BookOpen, Trophy, Target, TrendingUp, PlayCircle, Share2, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CollectionCard from "@/components/CollectionCard";
@@ -12,6 +12,10 @@ import { PerformanceChart } from "@/components/PerformanceChart";
 import { TopicBreakdown } from "@/components/TopicBreakdown";
 import { ShareQuizDialog } from "@/components/ShareQuizDialog";
 import { QuizAttemptBadge } from "@/components/QuizAttemptBadge";
+import { Header } from "@/components/layout/Header";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { LoadingSpinner } from "@/components/layout/LoadingSpinner";
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -71,7 +75,7 @@ const Dashboard = () => {
       console.error('Error loading collections:', error);
       toast({
         title: "Error loading collections",
-        description: error?.message || "Failed to load collections. Please try again.",
+        description: error?.message || "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -84,27 +88,19 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from('quizzes')
         .select(`
-          id,
-          title,
-          description,
-          created_at,
-          is_public,
-          collections (
-            id,
-            title
-          ),
-          attempts!inner(id, completed_at)
+          id, title, description, created_at, is_public,
+          collections(id, title),
+          attempts(id, completed_at)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Count completed attempts for each quiz
+
       const quizzesWithCounts = (data || []).map(quiz => ({
         ...quiz,
         attemptCount: quiz.attempts?.filter((a: any) => a.completed_at !== null).length || 0,
       }));
-      
+
       setQuizzes(quizzesWithCounts);
     } catch (error: any) {
       console.error('Error loading quizzes:', error);
@@ -113,23 +109,11 @@ const Dashboard = () => {
 
   const loadAnalytics = async () => {
     try {
-      // Load quiz attempts with quiz and collection info
       const { data: attemptsData, error: attemptsError } = await supabase
         .from('attempts')
         .select(`
-          id,
-          quiz_id,
-          score,
-          total_questions,
-          completed_at,
-          quizzes (
-            id,
-            title,
-            collections (
-              id,
-              title
-            )
-          )
+          id, quiz_id, score, total_questions, completed_at,
+          quizzes(id, title, collections(id, title))
         `)
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false })
@@ -151,31 +135,21 @@ const Dashboard = () => {
         },
       }));
 
-      // Calculate average score
-      const totalScore = formattedAttempts.reduce((sum: number, a: any) => 
+      const totalScore = formattedAttempts.reduce((sum: number, a: any) =>
         sum + (a.score / a.total_questions) * 100, 0
       );
-      const averageScore = formattedAttempts.length > 0 
-        ? Math.round(totalScore / formattedAttempts.length) 
+      const averageScore = formattedAttempts.length > 0
+        ? Math.round(totalScore / formattedAttempts.length)
         : 0;
 
-      // Load shared quizzes
-      const { data: sharesData } = await supabase
-        .from('quiz_shares')
-        .select('id');
+      const { data: sharesData } = await supabase.from('quiz_shares').select('id');
 
-      // Load topic performance stats
       const { data: answersData } = await supabase
         .from('answers')
-        .select(`
-          is_correct,
-          questions (
-            topic_category
-          )
-        `);
+        .select(`is_correct, questions(topic_category)`);
 
       const topicMap = new Map<string, { correct: number; total: number }>();
-      
+
       (answersData || []).forEach((answer: any) => {
         const topic = answer.questions?.topic_category || 'General';
         const stats = topicMap.get(topic) || { correct: 0, total: 0 };
@@ -212,176 +186,110 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-primary to-primary-dark p-2 rounded-xl">
-              <BookOpen className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">QuizGenius</h1>
-              <p className="text-xs text-muted-foreground">AI-Powered Learning</p>
-            </div>
-          </div>
-          <Button variant="ghost" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </div>
-      </header>
+    <PageContainer>
+      <Header onSignOut={handleSignOut} />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-card rounded-xl p-6 shadow-soft border">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <BookOpen className="h-5 w-5 text-primary" />
+      <main className="container mx-auto px-4 py-6">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            { icon: BookOpen, label: "Collections", value: collections.length, color: "primary" },
+            { icon: Trophy, label: "Completed", value: analytics.totalAttempts, color: "secondary" },
+            { icon: Target, label: "Avg Score", value: `${analytics.averageScore}%`, color: "accent" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-card rounded-xl p-4 border shadow-soft">
+              <div className={`inline-flex p-2 rounded-lg bg-${stat.color}/10 mb-2`}>
+                <stat.icon className={`h-4 w-4 text-${stat.color}`} />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Collections</p>
-                <p className="text-2xl font-bold">{collections.length}</p>
-              </div>
+              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
             </div>
-          </div>
-          <div className="bg-card rounded-xl p-6 shadow-soft border">
-            <div className="flex items-center gap-3">
-              <div className="bg-secondary/10 p-3 rounded-lg">
-                <Trophy className="h-5 w-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Quizzes Completed</p>
-                <p className="text-2xl font-bold">{analytics.totalAttempts}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-card rounded-xl p-6 shadow-soft border">
-            <div className="flex items-center gap-3">
-              <div className="bg-accent/10 p-3 rounded-lg">
-                <Target className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Average Score</p>
-                <p className="text-2xl font-bold">{analytics.averageScore}%</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Ready to Learn Hero Section */}
+        {/* Ready to Learn Section */}
         {quizzes.length > 0 && (
-          <div className="mb-8">
-            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl p-6 border border-primary/20">
-              <div className="flex items-center gap-3 mb-4">
-                <PlayCircle className="h-8 w-8 text-primary" />
-                <div>
-                  <h2 className="text-2xl font-bold">Ready to Learn</h2>
-                  <p className="text-muted-foreground">Start practicing with available quizzes</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {quizzes.slice(0, 6).map((quiz) => (
-                  <div
-                    key={quiz.id}
-                    className="bg-card rounded-xl p-5 border shadow-sm hover:shadow-md transition-all group"
-                  >
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {quiz.collections?.title || 'Unknown Collection'}
-                        </p>
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors flex-1">
-                            {quiz.title}
-                          </h3>
-                          <QuizAttemptBadge attemptCount={quiz.attemptCount || 0} />
-                        </div>
-                        {quiz.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {quiz.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => navigate(`/quiz/${quiz.id}`)}
-                          className="flex-1 bg-gradient-to-r from-primary to-primary-dark h-12 text-base font-semibold"
-                        >
-                          <PlayCircle className="h-5 w-5 mr-2" />
-                          Start Learning
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-12 w-12"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedQuiz(quiz);
-                            setShareDialogOpen(true);
-                          }}
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {quizzes.length > 6 && (
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    +{quizzes.length - 6} more quizzes available in your collections
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <PlayCircle className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold">Ready to Learn</h2>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+              {quizzes.slice(0, 6).map((quiz) => (
+                <div
+                  key={quiz.id}
+                  className="flex-shrink-0 w-[280px] bg-card rounded-xl p-4 border shadow-soft"
+                >
+                  <p className="text-xs text-muted-foreground mb-1 truncate">
+                    {quiz.collections?.title || 'Collection'}
                   </p>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-semibold line-clamp-2 flex-1">{quiz.title}</h3>
+                    <QuizAttemptBadge attemptCount={quiz.attemptCount || 0} />
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      onClick={() => navigate(`/quiz/${quiz.id}`)}
+                      className="flex-1 h-10 bg-gradient-to-r from-primary to-primary-dark font-semibold"
+                      size="sm"
+                    >
+                      <Zap className="h-4 w-4 mr-1" />
+                      Start
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10"
+                      onClick={() => {
+                        setSelectedQuiz(quiz);
+                        setShareDialogOpen(true);
+                      }}
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {/* Tabs for Collections and Analytics */}
-        <Tabs defaultValue="collections" className="space-y-6">
-          <TabsList className="grid w-full md:w-auto grid-cols-2 md:inline-grid md:grid-cols-2">
-            <TabsTrigger value="collections" className="gap-2">
+        {/* Tabs */}
+        <Tabs defaultValue="collections" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 h-12">
+            <TabsTrigger value="collections" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <BookOpen className="h-4 w-4" />
-              Collections
+              <span className="hidden sm:inline">Collections</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
+            <TabsTrigger value="analytics" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <TrendingUp className="h-4 w-4" />
-              Analytics
+              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="collections" className="space-y-6">
+          <TabsContent value="collections" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">My Collections</h2>
+              <h2 className="text-xl font-bold">My Collections</h2>
               <Button
                 onClick={() => setCreateOpen(true)}
-                className="bg-gradient-to-r from-primary to-primary-dark h-12 md:h-10"
+                className="h-10 bg-gradient-to-r from-primary to-primary-dark"
+                size="sm"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                New Collection
+                <Plus className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">New</span>
               </Button>
             </div>
 
             {collections.length === 0 ? (
-              <div className="text-center py-12">
-                <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-xl font-semibold mb-2">No collections yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first collection to start generating AI quizzes
+              <div className="text-center py-12 bg-card rounded-2xl border">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-semibold mb-2">No collections yet</h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Create your first collection to start
                 </p>
                 <Button
                   onClick={() => setCreateOpen(true)}
@@ -392,7 +300,7 @@ const Dashboard = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {collections.map((collection) => (
                   <CollectionCard
                     key={collection.id}
@@ -404,25 +312,25 @@ const Dashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <h2 className="text-2xl font-bold">Performance Analytics</h2>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TabsContent value="analytics" className="space-y-4">
+            <h2 className="text-xl font-bold">Performance</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <PerformanceChart attempts={analytics.attempts} />
               <TopicBreakdown topics={analytics.topicStats} />
             </div>
-
             <QuizHistory attempts={analytics.attempts.slice(0, 10)} />
           </TabsContent>
         </Tabs>
       </main>
+
+      <BottomNav />
 
       <CreateCollectionDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSuccess={loadCollections}
       />
-      
+
       {selectedQuiz && (
         <ShareQuizDialog
           open={shareDialogOpen}
@@ -432,7 +340,7 @@ const Dashboard = () => {
           isPublic={selectedQuiz.is_public || false}
         />
       )}
-    </div>
+    </PageContainer>
   );
 };
 

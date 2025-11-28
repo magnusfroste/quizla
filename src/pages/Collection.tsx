@@ -112,7 +112,7 @@ const Collection = () => {
 
       // Basic SEO without extra deps
       if (data) {
-        document.title = `${data.title} | QuizGenius`;
+        document.title = `${data.title} | QuizGeni`;
         const meta = document.querySelector('meta[name="description"]');
         if (meta) meta.setAttribute('content', data.description || 'View collection');
       }
