@@ -6,6 +6,7 @@ const navItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: BookOpen, label: "Study", path: "/dashboard?tab=collections" },
   { icon: TrendingUp, label: "Stats", path: "/dashboard?tab=analytics" },
+  { icon: User, label: "Profile", path: "/profile" },
 ];
 
 export function BottomNav() {

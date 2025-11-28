@@ -224,13 +224,13 @@ const Dashboard = () => {
                   key={quiz.id}
                   className="flex-shrink-0 w-[280px] bg-card rounded-xl p-4 border shadow-soft"
                 >
-                  <p className="text-xs text-muted-foreground mb-1 truncate">
-                    {quiz.collections?.title || 'Collection'}
-                  </p>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold line-clamp-2 flex-1">{quiz.title}</h3>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="text-xs text-muted-foreground truncate">
+                      {quiz.collections?.title || 'Collection'}
+                    </p>
                     <QuizAttemptBadge attemptCount={quiz.attemptCount || 0} />
                   </div>
+                  <h3 className="font-semibold text-sm truncate mb-1">{quiz.title}</h3>
                   <div className="flex gap-2 mt-3">
                     <Button
                       onClick={() => navigate(`/quiz/${quiz.id}`)}
