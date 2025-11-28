@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, BookOpen, Brain, Lightbulb, List, Grid, Filter, Image as ImageIcon, ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { Search, BookOpen, Brain, Lightbulb, List, Grid, Filter, Image as ImageIcon, ArrowLeft, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MaterialViewer } from "@/components/MaterialViewer";
+import { useToast } from "@/hooks/use-toast";
 
 interface MaterialAnalysis {
   id: string;
@@ -87,7 +88,10 @@ export default function Study() {
   const [loading, setLoading] = useState(true);
   const [collectionTitle, setCollectionTitle] = useState("");
   const [isReading, setIsReading] = useState(false);
-  const [speechSynthesis] = useState(() => window.speechSynthesis);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [currentReadingPage, setCurrentReadingPage] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { toast } = useToast();
 
   // Load collection and analyses
   useEffect(() => {
@@ -237,86 +241,112 @@ export default function Study() {
     }
   };
 
-  const handleReadAloud = () => {
-    if (isReading) {
-      speechSynthesis.cancel();
-      setIsReading(false);
-      return;
+  // Stop audio playback
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
-
-    // Get all visible text content
-    const contentToRead = filteredAnalyses
-      .map(analysis => analysis.extracted_text)
-      .filter(text => text && text.trim().length > 0)
-      .join('. ');
-
-    if (!contentToRead) {
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(contentToRead);
-    utterance.lang = 'sv-SE'; // Swedish language
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    // Try to find a Swedish voice
-    const voices = speechSynthesis.getVoices();
-    const swedishVoice = voices.find(voice => 
-      voice.lang === 'sv-SE' || voice.lang.startsWith('sv')
-    );
-    if (swedishVoice) {
-      utterance.voice = swedishVoice;
-    }
-    
-    utterance.onend = () => {
-      setIsReading(false);
-    };
-    
-    utterance.onerror = () => {
-      setIsReading(false);
-    };
-
-    speechSynthesis.speak(utterance);
-    setIsReading(true);
+    setIsReading(false);
+    setCurrentReadingPage(null);
   };
 
-  const handleReadPage = (text: string) => {
+  // Play audio using ElevenLabs
+  const playWithElevenLabs = async (text: string, pageId?: string) => {
     if (isReading) {
-      speechSynthesis.cancel();
-      setIsReading(false);
+      stopAudio();
       return;
     }
 
     if (!text || !text.trim()) {
+      toast({
+        title: "Ingen text",
+        description: "Det finns ingen text att läsa upp.",
+        variant: "destructive",
+      });
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'sv-SE';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    const voices = speechSynthesis.getVoices();
-    const swedishVoice = voices.find(voice => 
-      voice.lang === 'sv-SE' || voice.lang.startsWith('sv')
-    );
-    if (swedishVoice) {
-      utterance.voice = swedishVoice;
-    }
-    
-    utterance.onend = () => {
-      setIsReading(false);
-    };
-    
-    utterance.onerror = () => {
-      setIsReading(false);
-    };
+    setIsLoadingAudio(true);
+    if (pageId) setCurrentReadingPage(pageId);
 
-    speechSynthesis.speak(utterance);
-    setIsReading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("text-to-speech", {
+        body: { text: text.slice(0, 5000), voice: "Aria" },
+      });
+
+      if (error) throw error;
+
+      if (!data?.audioContent) {
+        throw new Error("No audio content received");
+      }
+
+      // Create audio from base64
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(data.audioContent), c => c.charCodeAt(0))],
+        { type: "audio/mpeg" }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Clean up previous audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.onended = () => {
+        setIsReading(false);
+        setCurrentReadingPage(null);
+      };
+      audioRef.current.onerror = () => {
+        setIsReading(false);
+        setCurrentReadingPage(null);
+        toast({
+          title: "Uppspelningsfel",
+          description: "Kunde inte spela upp ljudet.",
+          variant: "destructive",
+        });
+      };
+
+      await audioRef.current.play();
+      setIsReading(true);
+    } catch (error: any) {
+      console.error("ElevenLabs TTS error:", error);
+      toast({
+        title: "Läsfel",
+        description: error?.message || "Kunde inte generera tal.",
+        variant: "destructive",
+      });
+      setCurrentReadingPage(null);
+    } finally {
+      setIsLoadingAudio(false);
+    }
   };
+
+  const handleReadAloud = () => {
+    // Get all visible text content
+    const contentToRead = filteredAnalyses
+      .map(analysis => analysis.extracted_text)
+      .filter(text => text && text.trim().length > 0)
+      .join(". ");
+
+    playWithElevenLabs(contentToRead, "all");
+  };
+
+  const handleReadPage = (text: string, pageId: string) => {
+    playWithElevenLabs(text, pageId);
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+    };
+  }, []);
 
   const topicGroups = groupAnalysesByTopic();
 
@@ -435,16 +465,22 @@ export default function Study() {
                 variant="outline"
                 size="sm"
                 onClick={handleReadAloud}
+                disabled={isLoadingAudio && currentReadingPage === "all"}
               >
-                {isReading ? (
+                {isLoadingAudio && currentReadingPage === "all" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Laddar...
+                  </>
+                ) : isReading && currentReadingPage === "all" ? (
                   <>
                     <VolumeX className="h-4 w-4 mr-2" />
-                    Stop Reading
+                    Stoppa
                   </>
                 ) : (
                   <>
                     <Volume2 className="h-4 w-4 mr-2" />
-                    Read it for me
+                    Läs för mig
                   </>
                 )}
               </Button>
@@ -693,9 +729,12 @@ export default function Study() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleReadPage(analysis.extracted_text)}
+                              onClick={() => handleReadPage(analysis.extracted_text, analysis.id)}
+                              disabled={isLoadingAudio && currentReadingPage === analysis.id}
                             >
-                              {isReading ? (
+                              {isLoadingAudio && currentReadingPage === analysis.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : isReading && currentReadingPage === analysis.id ? (
                                 <VolumeX className="h-4 w-4" />
                               ) : (
                                 <Volume2 className="h-4 w-4" />
