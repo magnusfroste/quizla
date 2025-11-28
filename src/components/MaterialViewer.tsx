@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -8,9 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Tag, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { useTouchSwipe } from "@/hooks/use-touch-swipe";
 import { MaterialTypeDialog } from "./MaterialTypeDialog";
+import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 
 interface Material {
   id: string;
@@ -68,6 +69,7 @@ export function MaterialViewer({
   const [imageUrl, setImageUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
 
   const currentMaterial = materials[currentIndex];
   const currentAnalysis = currentMaterial
@@ -75,14 +77,16 @@ export function MaterialViewer({
     : null;
 
   const handlePrevious = () => {
+    transformRef.current?.resetTransform();
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : materials.length - 1));
   };
 
   const handleNext = () => {
+    transformRef.current?.resetTransform();
     setCurrentIndex((prev) => (prev < materials.length - 1 ? prev + 1 : 0));
   };
 
-  // Touch swipe gestures
+  // Touch swipe gestures - only when not zoomed
   useTouchSwipe({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrevious,
@@ -127,6 +131,13 @@ export function MaterialViewer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, currentIndex, materials.length]);
 
+  // Reset zoom when dialog opens or image changes
+  useEffect(() => {
+    if (open) {
+      transformRef.current?.resetTransform();
+    }
+  }, [open, currentIndex]);
+
   const handleSaveType = async (materialId: string, newType: 'content' | 'learning_objectives' | 'reference') => {
     if (onTypeChange) {
       await onTypeChange(materialId, newType);
@@ -164,18 +175,75 @@ export function MaterialViewer({
           {loading ? (
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
           ) : (
-            <img
-              src={imageUrl}
-              alt={currentMaterial.file_name}
-              className="max-w-full max-h-full object-contain"
-            />
+            <TransformWrapper
+              ref={transformRef}
+              initialScale={1}
+              minScale={0.5}
+              maxScale={4}
+              centerOnInit
+              wheel={{ step: 0.1 }}
+              pinch={{ step: 5 }}
+              doubleClick={{ mode: "reset" }}
+            >
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <TransformComponent
+                    wrapperStyle={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    contentStyle={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={currentMaterial.file_name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </TransformComponent>
+
+                  {/* Zoom Controls */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-2 shadow-lg">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => zoomOut()}
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => resetTransform()}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => zoomIn()}
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TransformWrapper>
           )}
 
           {/* Navigation Buttons */}
           <Button
             variant="secondary"
             size="icon"
-            className="absolute left-2 md:left-4 top-2/3 md:top-1/2 -translate-y-1/2 h-14 w-14 md:h-12 md:w-12 rounded-full shadow-lg"
+            className="absolute left-2 md:left-4 top-2/3 md:top-1/2 -translate-y-1/2 h-14 w-14 md:h-12 md:w-12 rounded-full shadow-lg z-10"
             onClick={handlePrevious}
             disabled={loading}
           >
@@ -184,7 +252,7 @@ export function MaterialViewer({
           <Button
             variant="secondary"
             size="icon"
-            className="absolute right-2 md:right-4 top-2/3 md:top-1/2 -translate-y-1/2 h-14 w-14 md:h-12 md:w-12 rounded-full shadow-lg"
+            className="absolute right-2 md:right-4 top-2/3 md:top-1/2 -translate-y-1/2 h-14 w-14 md:h-12 md:w-12 rounded-full shadow-lg z-10"
             onClick={handleNext}
             disabled={loading}
           >
