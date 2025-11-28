@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Brain } from "lucide-react";
+import { Zap, ArrowLeft } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -42,7 +42,7 @@ const Auth = () => {
 
         toast({
           title: "Welcome back!",
-          description: "You've successfully signed in.",
+          description: "Ready to become a genius?",
         });
         navigate("/dashboard");
       } else {
@@ -61,7 +61,7 @@ const Auth = () => {
 
         toast({
           title: "Account created!",
-          description: "Welcome to QuizGenius. Let's start learning!",
+          description: "Welcome to QuizGeni. Let's start learning!",
         });
         navigate("/dashboard");
       }
@@ -77,81 +77,105 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-background via-muted/30 to-background">
-      <Card className="w-full max-w-md shadow-medium">
-        <CardHeader className="space-y-3">
-          <div className="flex items-center justify-center mb-2">
-            <div className="bg-gradient-to-br from-primary to-primary-dark p-3 rounded-2xl">
-              <Brain className="h-8 w-8 text-white" />
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Back button */}
+      <div className="container mx-auto px-4 py-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-4 pb-12">
+        {/* Background glow */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        </div>
+
+        <Card className="w-full max-w-md border-border/50 shadow-xl animate-scale-in">
+          <CardHeader className="space-y-4 text-center">
+            {/* Logo */}
+            <div className="flex items-center justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent blur-lg opacity-50" />
+                <div className="relative bg-gradient-to-br from-primary to-primary-dark p-3 rounded-xl">
+                  <Zap className="h-7 w-7 text-primary-foreground" />
+                </div>
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl text-center">
-            {isLogin ? "Welcome back" : "Create account"}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {isLogin 
-              ? "Sign in to continue your learning journey" 
-              : "Start creating AI-powered quizzes from your study materials"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
-            {!isLogin && (
+            <div>
+              <CardTitle className="text-2xl font-bold">
+                {isLogin ? "Welcome back" : "Join QuizGeni"}
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {isLogin
+                  ? "Sign in to continue your learning journey"
+                  : "Create an account to start studying smarter"}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAuth} className="space-y-4">
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Your name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required={!isLogin}
+                    className="h-12"
+                  />
+                </div>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin}
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-12"
                 />
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="h-12"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 transition-opacity"
+                disabled={loading}
+              >
+                {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
+              </Button>
+            </form>
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                {isLogin
+                  ? "Don't have an account? Sign up"
+                  : "Already have an account? Sign in"}
+              </button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 transition-opacity"
-              disabled={loading}
-            >
-              {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
-            </Button>
-          </form>
-          <div className="mt-4 text-center text-sm">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline"
-            >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
