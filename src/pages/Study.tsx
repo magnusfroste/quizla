@@ -682,15 +682,13 @@ export default function Study() {
                                   </span>
                                 )}
                               </CardTitle>
-                              <CardDescription>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {analysis.major_topics.map((topic, i) => (
-                                    <Badge key={i} variant="outline" className="text-xs">
-                                      {topic}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </CardDescription>
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {analysis.major_topics.map((topic, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {topic}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
                             <Button
                               variant="ghost"
@@ -706,8 +704,8 @@ export default function Study() {
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          {/* Visual Elements with Thumbnail */}
-                          {analysis.visual_elements.length > 0 && material && imageUrl && (
+                          {/* Source Image with Visual Elements */}
+                          {material && imageUrl && (
                             <div className="flex gap-4 p-3 bg-muted/30 rounded-lg">
                               <div 
                                 className="flex-shrink-0 cursor-pointer"
@@ -722,13 +720,17 @@ export default function Study() {
                               <div className="flex-1">
                                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                                   <ImageIcon className="h-4 w-4" />
-                                  Visual Elements
+                                  {analysis.visual_elements.length > 0 ? 'Visual Elements' : 'Source Image'}
                                 </h4>
-                                <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
-                                  {analysis.visual_elements.map((element, idx) => (
-                                    <li key={idx}>{element}</li>
-                                  ))}
-                                </ul>
+                                {analysis.visual_elements.length > 0 ? (
+                                  <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
+                                    {analysis.visual_elements.map((element, idx) => (
+                                      <li key={idx}>{element}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">Click to view full image</p>
+                                )}
                               </div>
                             </div>
                           )}
