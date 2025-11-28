@@ -141,6 +141,20 @@ ${quizCount > 0 ? `⚠️ CRITICAL: This collection already has ${quizCount} qui
 - Explore DIFFERENT topics or deeper/alternative perspectives
 - Be CREATIVE and find new ways to test the same material` : '✨ This is the first quiz - create a solid foundation covering major topics'}
 
+📝 QUIZ NAMING - BE CREATIVE & VARIED:
+${quizCount === 0 ? `First quiz - name it like: "Grunderna i [Ämne]", "Introduction to [Topic]", "[Ämne] - Första Testet"` : 
+  quizCount === 1 ? `Second quiz - name it like: "Fördjupning: [Ämne]", "[Topic] - Part 2", "Mer om [Ämne]"` :
+  quizCount === 2 ? `Third quiz - name it like: "[Ämne] - Utmaningen", "Advanced [Topic]", "Quiz #3: [Ämne]"` :
+  `Quiz #${quizCount + 1} - use creative variations like: "[Ämne] - Omgång ${quizCount + 1}", "Master Quiz: [Topic]", "Extra: [Ämne]", or focus on specific sub-topics`}
+
+Naming rules:
+- Keep it SHORT (3-6 words maximum)
+- Include the main topic or subject
+- Vary the format based on quiz number
+- Match the SAME LANGUAGE as the study materials
+- Swedish examples: "Kemi: Syror & Baser", "Matematik - Derivator #2", "Historia: Världskrigen"
+- English examples: "Biology Basics", "Advanced Chemistry #3", "Math: Integrals Deep Dive"
+
 QUESTION GENERATION STRATEGY:
 - Generate 1 question per 1.5-2 pages of content (e.g., 19 pages → 12-15 questions)
 - Minimum 10 questions, maximum 20 questions
@@ -165,7 +179,7 @@ EXAM INTELLIGENCE:
 
 Return JSON with this EXACT structure:
 {
-  "title": "Descriptive Quiz Title",
+  "title": "Short, creative quiz title (3-6 words, match material language)",
   "description": "Brief overview of topics covered",
   "content_analysis": {
     "major_topics": ["Topic 1", "Topic 2", ...],
