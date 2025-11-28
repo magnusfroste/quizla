@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/Header";
-import { User, Mail, Calendar, Crown, Sparkles, Shield, ArrowLeft } from "lucide-react";
+import { useUserLimits } from "@/hooks/useUserLimits";
+import { User, Mail, Calendar, Crown, Sparkles, Shield, ArrowLeft, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 
 interface Profile {
@@ -17,7 +19,20 @@ interface Profile {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  plan?: 'free' | 'student' | 'pro';
 }
+
+const planLabels = {
+  free: 'Free',
+  student: 'Student',
+  pro: 'Pro',
+};
+
+const planColors = {
+  free: 'secondary',
+  student: 'default',
+  pro: 'default',
+} as const;
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -26,6 +41,7 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [fullName, setFullName] = useState("");
+  const { plan, limits, usage, config, loading: limitsLoading } = useUserLimits();
 
   useEffect(() => {
     const init = async () => {
@@ -41,7 +57,7 @@ const Profile = () => {
 
   const loadProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -129,11 +145,20 @@ const Profile = () => {
                 {profile?.full_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase() || "U"}
               </div>
               <div className="absolute -bottom-1 -right-1 bg-muted rounded-full p-1.5 border-2 border-background">
-                <Shield className="h-4 w-4 text-muted-foreground" />
+                {plan === 'pro' ? (
+                  <Crown className="h-4 w-4 text-primary" />
+                ) : plan === 'student' ? (
+                  <Sparkles className="h-4 w-4 text-primary" />
+                ) : (
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                )}
               </div>
             </div>
             <h1 className="text-2xl font-bold mt-4">{profile?.full_name || "Student"}</h1>
             <p className="text-muted-foreground">{profile?.email}</p>
+            <Badge variant={planColors[plan]} className="mt-2">
+              {planLabels[plan]} Plan
+            </Badge>
           </div>
 
           {/* Profile Info Card */}
@@ -186,47 +211,90 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Plan Card - Pro Plan Placeholder */}
+          {/* Plan & Usage Card */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-primary" />
-                Your Plan
+                Your Plan & Usage
               </CardTitle>
               <CardDescription>
-                Upgrade for more features
+                {plan === 'free' ? 'Upgrade for more features' : 'Manage your subscription'}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Current Plan */}
               <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                 <div>
-                  <p className="font-semibold">Free Plan</p>
-                  <p className="text-sm text-muted-foreground">Basic quiz generation</p>
+                  <p className="font-semibold">{planLabels[plan]} Plan</p>
+                  <p className="text-sm text-muted-foreground">
+                    {plan === 'pro' ? 'Unlimited access' : plan === 'student' ? 'Enhanced features' : 'Basic quiz generation'}
+                  </p>
                 </div>
-                <Shield className="h-8 w-8 text-muted-foreground" />
+                {plan === 'pro' ? (
+                  <Crown className="h-8 w-8 text-primary" />
+                ) : plan === 'student' ? (
+                  <Sparkles className="h-8 w-8 text-primary" />
+                ) : (
+                  <Shield className="h-8 w-8 text-muted-foreground" />
+                )}
               </div>
-              
-              <div className="mt-6 p-4 rounded-lg border border-primary/30 bg-primary/5">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-primary">Pro Plan Coming Soon</p>
-                    <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-                      <li>• Unlimited quiz generations</li>
-                      <li>• Advanced AI analysis</li>
-                      <li>• Priority support</li>
-                      <li>• Export to multiple formats</li>
-                    </ul>
+
+              {/* Usage Stats */}
+              {!limitsLoading && plan !== 'pro' && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Din användning</p>
+                  <div className="grid gap-2">
+                    <UsageRow
+                      label="Samlingar"
+                      used={usage.collections}
+                      max={limits.maxCollections}
+                    />
+                    <UsageRow
+                      label="Material totalt"
+                      used={usage.materialsTotal}
+                      max={limits.maxMaterialsTotal}
+                    />
                   </div>
                 </div>
+              )}
+
+              {/* Upgrade CTA */}
+              {plan === 'free' && (
+                <div className="mt-4 p-4 rounded-lg border border-primary/30 bg-primary/5">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-primary">Uppgradera till Student</p>
+                      <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                        <li>• {config.student_max_collections} samlingar</li>
+                        <li>• {config.student_max_materials_total} sidor totalt</li>
+                        <li>• {config.student_max_quizzes_per_collection} quiz per samling</li>
+                        <li>• Prioriterad support</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4 border-primary/30 text-primary hover:bg-primary/10"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Se alla planer
+                  </Button>
+                </div>
+              )}
+
+              {/* Manage subscription (for paid plans) */}
+              {plan !== 'free' && (
                 <Button 
                   variant="outline" 
-                  className="w-full mt-4 border-primary/30 text-primary hover:bg-primary/10"
+                  className="w-full"
                   disabled
                 >
-                  Coming Soon
+                  Hantera prenumeration (Kommer snart)
                 </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -253,5 +321,30 @@ const Profile = () => {
     </div>
   );
 };
+
+function UsageRow({ label, used, max }: { label: string; used: number; max: number }) {
+  const percentage = max === Infinity ? 0 : Math.min((used / max) * 100, 100);
+  const isNearLimit = percentage >= 80;
+  const isAtLimit = percentage >= 100;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={isAtLimit ? 'text-destructive font-medium' : isNearLimit ? 'text-yellow-500' : ''}>
+          {used}/{max === Infinity ? '∞' : max}
+        </span>
+      </div>
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full transition-all ${
+            isAtLimit ? 'bg-destructive' : isNearLimit ? 'bg-yellow-500' : 'bg-primary'
+          }`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default Profile;

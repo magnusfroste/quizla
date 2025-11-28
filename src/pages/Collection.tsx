@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useUserLimits } from "@/hooks/useUserLimits";
 import { Image as ImageIcon, Sparkles, ArrowLeft, Upload, Brain, BookOpen, Download, Camera, PlayCircle, Share2 } from "lucide-react";
 import { MaterialGallery } from "@/components/MaterialGallery";
 import { MaterialViewer } from "@/components/MaterialViewer";
@@ -12,6 +13,7 @@ import { UploadProgress } from "@/components/UploadProgress";
 import { compressImage, createImagePreview } from "@/lib/imageCompression";
 import { ShareQuizDialog } from "@/components/ShareQuizDialog";
 import { QuizAttemptBadge } from "@/components/QuizAttemptBadge";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 
 interface Material {
   id: string;
@@ -52,7 +54,10 @@ const Collection = () => {
     error?: string;
     materialType: 'content' | 'learning_objectives' | 'reference';
   }>>([]);
+  const [upgradePromptOpen, setUpgradePromptOpen] = useState(false);
+  const [upgradePromptType, setUpgradePromptType] = useState<'materials' | 'quizzes'>('materials');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { canUploadMaterial, canGenerateQuiz, getRemainingMaterials, usage, limits, plan } = useUserLimits();
 
   useEffect(() => {
     const init = async () => {
@@ -138,6 +143,26 @@ const Collection = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !id) return;
+
+    // Check upload limits
+    if (!canUploadMaterial(id)) {
+      setUpgradePromptType('materials');
+      setUpgradePromptOpen(true);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Check if user has enough remaining slots
+    const remainingSlots = getRemainingMaterials(id);
+    if (files.length > remainingSlots) {
+      toast({
+        title: 'Upload limit',
+        description: `You can only upload ${remainingSlots} more file${remainingSlots === 1 ? '' : 's'} with your current plan.`,
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     setUploading(true);
 
@@ -276,6 +301,13 @@ const Collection = () => {
         description: 'Please extract content from materials first before generating a quiz.',
         variant: 'destructive',
       });
+      return;
+    }
+
+    // Check quiz generation limit
+    if (!canGenerateQuiz(id)) {
+      setUpgradePromptType('quizzes');
+      setUpgradePromptOpen(true);
       return;
     }
 
@@ -745,6 +777,14 @@ const Collection = () => {
             isPublic={selectedQuiz.is_public || false}
           />
         )}
+
+        <UpgradePrompt
+          open={upgradePromptOpen}
+          onOpenChange={setUpgradePromptOpen}
+          limitType={upgradePromptType}
+          currentUsage={upgradePromptType === 'materials' ? usage.materialsTotal : (usage.quizzesPerCollection[id || ''] || 0)}
+          maxUsage={upgradePromptType === 'materials' ? limits.maxMaterialsTotal : limits.maxQuizzesPerCollection}
+        />
       </main>
     </div>
   );

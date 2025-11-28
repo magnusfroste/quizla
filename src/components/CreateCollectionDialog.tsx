@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserLimits } from "@/hooks/useUserLimits";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
+import { AlertCircle } from "lucide-react";
 
 interface CreateCollectionDialogProps {
   open: boolean;
@@ -17,10 +20,19 @@ const CreateCollectionDialog = ({ open, onOpenChange, onSuccess }: CreateCollect
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [upgradePromptOpen, setUpgradePromptOpen] = useState(false);
   const { toast } = useToast();
+  const { canCreateCollection, usage, limits, plan } = useUserLimits();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check limit before creating
+    if (!canCreateCollection) {
+      setUpgradePromptOpen(true);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -57,53 +69,92 @@ const CreateCollectionDialog = ({ open, onOpenChange, onSuccess }: CreateCollect
     }
   };
 
+  const isAtLimit = !canCreateCollection;
+  const usageText = limits.maxCollections === Infinity 
+    ? `${usage.collections} samlingar` 
+    : `${usage.collections}/${limits.maxCollections} samlingar`;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create New Collection</DialogTitle>
-          <DialogDescription>
-            Organize your study materials into collections to generate AI-powered quizzes.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                placeholder="e.g., Biology Chapter 5"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Textarea
-                id="description"
-                placeholder="What topics does this collection cover?"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Collection</DialogTitle>
+            <DialogDescription>
+              Organize your study materials into collections to generate AI-powered quizzes.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Usage indicator */}
+          <div className={`flex items-center gap-2 p-3 rounded-lg ${isAtLimit ? 'bg-destructive/10 text-destructive' : 'bg-muted/50'}`}>
+            {isAtLimit && <AlertCircle className="h-4 w-4 flex-shrink-0" />}
+            <span className="text-sm">
+              {isAtLimit 
+                ? `Du har nått gränsen för din ${plan === 'free' ? 'Free' : plan === 'student' ? 'Student' : 'Pro'}-plan`
+                : usageText
+              }
+            </span>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || !title.trim()}
-              className="bg-gradient-to-r from-primary to-primary-dark"
-            >
-              {loading ? "Creating..." : "Create Collection"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  placeholder="e.g., Biology Chapter 5"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  disabled={isAtLimit}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description (optional)</Label>
+                <Textarea
+                  id="description"
+                  placeholder="What topics does this collection cover?"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  disabled={isAtLimit}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              {isAtLimit ? (
+                <Button
+                  type="button"
+                  onClick={() => setUpgradePromptOpen(true)}
+                  className="bg-gradient-to-r from-primary to-primary-dark"
+                >
+                  Uppgradera
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={loading || !title.trim()}
+                  className="bg-gradient-to-r from-primary to-primary-dark"
+                >
+                  {loading ? "Creating..." : "Create Collection"}
+                </Button>
+              )}
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <UpgradePrompt
+        open={upgradePromptOpen}
+        onOpenChange={setUpgradePromptOpen}
+        limitType="collections"
+        currentUsage={usage.collections}
+        maxUsage={limits.maxCollections}
+      />
+    </>
   );
 };
 
