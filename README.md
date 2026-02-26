@@ -1,73 +1,54 @@
-# Welcome to your Lovable project
+# AI-Driven Quiz Project
 
-## Project info
+## Overview
+The AI-Driven Quiz Project is designed to provide users with an interactive learning experience through quizzes that adapt to the user's knowledge level. Leveraging artificial intelligence, the project generates customized quiz questions and tracks user performance to enhance the learning experience.
 
-**URL**: https://lovable.dev/projects/a83c39ae-7114-45ec-a4fa-cc861d97dd05
+## Features
+- **Dynamic Question Generation**: Uses AI algorithms to create questions based on the user's existing knowledge.
+- **Performance Tracking**: Monitors user progress and adapts quizzes accordingly.
+- **User-Friendly Interface**: Intuitive design for ease of use.
+- **Multiple Choice & True/False Questions**: Supports a variety of question types to engage users.
+- **Analytics Dashboard**: Provides insights into user performance and areas for improvement.
 
-## How can I edit this code?
+## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/magnusfroste/quizla.git
+   cd quizla
+   ```
+2. Install the necessary dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the application:
+   ```bash
+   npm start
+   ```
 
-There are several ways of editing your application.
+## Usage
+- Launch the web application in your browser.
+- Select a quiz topic based on your interest.
+- Answer the questions presented, and receive immediate feedback on your performance.
 
-**Use Lovable**
+## Contributing
+We welcome contributions from the community! If you would like to contribute, please follow these steps:
+1. Fork the repository.
+2. Create a new branch:
+   ```bash
+   git checkout -b feature/YourFeatureName
+   ```
+3. Commit your changes:
+   ```bash
+   git commit -m 'Add some feature'
+   ```
+4. Push to the branch:
+   ```bash
+   git push origin feature/YourFeatureName
+   ```
+5. Open a pull request.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a83c39ae-7114-45ec-a4fa-cc861d97dd05) and start prompting.
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/a83c39ae-7114-45ec-a4fa-cc861d97dd05) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Acknowledgements
+- Special thanks to the contributors and participants who help make this project a success!
