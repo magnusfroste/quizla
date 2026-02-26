@@ -2,8 +2,8 @@
 
 ## Produktöversikt
 
-- **Namn:** QuizGeni.com
-- **Tagline:** "Snap. Quiz. Genius." / "Become a Genius from Your Own Quizzes"
+- **Namn:** Quizla.app
+- **Tagline:** "Snap. Quiz. Ace."
 - **Målgrupp:** Studenter som vill effektivisera sitt lärande via mobilen
 - **Plattform:** PWA (Progressive Web App) - mobile-first
 - **Design:** Dark mode default, youth-focused, gamification elements
