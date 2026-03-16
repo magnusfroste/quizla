@@ -49,7 +49,26 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${materials.length} materials to analyze`);
+    console.log(`Found ${materials.length} materials total`);
+
+    // Check which materials are already analyzed
+    const { data: existingAnalyses } = await supabaseClient
+      .from('material_analysis')
+      .select('material_id')
+      .eq('collection_id', collectionId);
+
+    const analyzedIds = new Set((existingAnalyses || []).map(a => a.material_id));
+    const unanalyzedMaterials = materials.filter(m => !analyzedIds.has(m.id));
+
+    if (unanalyzedMaterials.length === 0) {
+      console.log('All materials already analyzed, skipping');
+      return new Response(
+        JSON.stringify({ success: true, analyzed_count: 0, total_materials: materials.length, message: 'All materials already analyzed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`${unanalyzedMaterials.length} materials need analysis (${analyzedIds.size} already done)`);
 
     // Initialize progress tracking
     const { data: progressData, error: progressError } = await supabaseClient
