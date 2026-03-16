@@ -76,7 +76,7 @@ serve(async (req) => {
       .insert({
         collection_id: collectionId,
         current_page: 0,
-        total_pages: materials.length,
+        total_pages: unanalyzedMaterials.length,
         status: 'processing',
       })
       .select()
