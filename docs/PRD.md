@@ -13,19 +13,22 @@
 ## Implementerade Features ✅
 
 ### Kärnfunktioner
-- 📸 **Fota/ladda upp studiematerial** - Bildkomprimering för optimal balans mellan kvalitet och storlek
-- 🤖 **AI-driven textextraktion** - Gemini 2.5 Flash för OCR och innehållsanalys
-- 📝 **Automatisk quiz-generering** - Baserad på materialets innehåll och lärandemål
-- 🏷️ **Materialklassificering** - Tre typer: content, learning_objectives, reference
+- 📸 **Fota/ladda upp studiematerial** - Bildkomprimering för optimal balans mellan kvalitet och storlek. Automatisk HEIC→JPEG-konvertering för iPhone-bilder.
+- 🤖 **AI-driven textextraktion** - Gemini 2.5 Flash för OCR och innehållsanalys. Skydd mot dubbel-analys (redan analyserade filer hoppas över för att spara AI-tokens).
+- 📝 **Automatisk quiz-generering** - Pedagogisk AI med "lärarpersonlighet" (20+ års erfarenhet). Använder Bloom's taxonomi för progressiv svårighet (20% remember → 25% evaluate/create). Anpassad för svenska betygskriterier — frågor kräver utvecklade resonemang för högsta betyg.
+- 🎯 **Materialklassificering** - Tre typer: content, learning_objectives, reference. Learning objectives styr quiz-generering (varje mål måste ha minst en fråga). Content används som frågekälla. Reference ger enbart kontext.
+- 🔄 **Quiz-variation** - Vid multipla quizzes på samma material genereras automatiskt nya vinklar, ämnen och Bloom-nivåer. Befintliga frågor skickas till AI:n för att undvika överlappning. Testad variation: ~85% unika ämnen mellan quiz 1 och 2.
+- 🧠 **Misconception-driven distraktorer** - Felaktiga svarsalternativ baseras på vanliga elevmissförstånd, inte slumpmässiga felaktigheter. Varje distraktor är diagnostiskt användbar.
 - 🔊 **Text-to-speech** - ElevenLabs för "Read it for me" på svenska
 - 📁 **Collections** - Organisera material och quizzes
-- 📊 **Analytics** - Quiz-historik och prestationsöversikt
+- 📊 **Analytics & Admin** - Quiz-historik, prestationsöversikt, och admin-dashboard med kostnadsrelaterad statistik (uppladdade filer, AI-analyser, genererade frågor, lagring)
 - 📄 **PDF-export** - Exportera studiematerial
 
 ### Tekniska Features
 - Real-time progress tracking vid innehållsextraktion
 - Bildkomprimering browser-side (1.5MB/1800px)
 - Flerspråksstöd - bevarar källspråk i analys
+- HEIC/HEIF-stöd via client-side konvertering
 
 ---
 
@@ -144,4 +147,4 @@
 
 ---
 
-*Senast uppdaterad: 2025-11-28*
+*Senast uppdaterad: 2026-03-16*
