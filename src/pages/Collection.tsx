@@ -216,7 +216,9 @@ const Collection = () => {
           );
 
           const timestamp = Date.now();
-          const filePath = `${userId}/${id}/${timestamp}-${item.file.name}`;
+          // Use compressed file's name (handles HEIC→JPG rename)
+          const fileName = compressedFile.name || item.file.name;
+          const filePath = `${userId}/${id}/${timestamp}-${fileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from('study-materials')
@@ -233,8 +235,8 @@ const Collection = () => {
             .from('materials')
             .insert({
               collection_id: id,
-              file_name: item.file.name,
-              mime_type: item.file.type,
+              file_name: fileName,
+              mime_type: compressedFile.type || 'image/jpeg',
               file_size: compressedFile.size,
               storage_path: filePath,
               material_type: item.materialType,
