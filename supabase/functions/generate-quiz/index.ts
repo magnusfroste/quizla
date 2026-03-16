@@ -150,10 +150,15 @@ Keep titles SHORT (3-6 words), in the SAME language as materials.
 - Minimum 10, maximum 20 questions
 
 ### Cognitive Distribution (Bloom's Taxonomy)
-- ~25% **Remember** — Key terms, definitions, basic facts. But rephrase from the textbook!
-- ~35% **Understand/Apply** — "Given this scenario, which method would you use?" "What happens when X changes?"
+- ~20% **Remember** — Key terms, definitions, basic facts. But rephrase from the textbook!
+- ~30% **Understand/Apply** — "Given this scenario, which method would you use?" "What happens when X changes?"
 - ~25% **Analyze** — Compare concepts, explain cause-effect, identify relationships
-- ~15% **Evaluate/Create** — Judge approaches, predict outcomes, synthesize multiple concepts
+- ~25% **Evaluate/Create** — These are the HIGHEST GRADE questions. Students must demonstrate reasoning, argumentation, and the ability to weigh multiple perspectives. Ask "why", "compare and discuss", "what would happen if", "evaluate which approach is better and justify". These questions separate students who memorized from those who truly understand.
+
+### GRADING AWARENESS
+- Students aiming for the highest grade must show "developed and well-supported reasoning" (utvecklade och väl underbyggda resonemang)
+- Include questions where ALL answers seem partially correct, but only one demonstrates DEEP understanding
+- At least 2-3 questions should require combining knowledge from multiple topics
 
 ### Progressive Difficulty
 - Questions 1-3: Warm up (easy, builds confidence)
