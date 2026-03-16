@@ -169,7 +169,9 @@ const Collection = () => {
     // Create upload items with previews
     const items = await Promise.all(
       Array.from(files).map(async (file) => {
-        if (!file.type.startsWith('image/')) {
+        const isImage = file.type.startsWith('image/') || 
+          /\.(heic|heif|jpg|jpeg|png|webp|gif)$/i.test(file.name);
+        if (!isImage) {
           return null;
         }
         const preview = await createImagePreview(file);
