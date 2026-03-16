@@ -634,13 +634,15 @@ const Collection = () => {
                   <Button 
                     className={`w-full ${analyzing ? 'animate-pulse' : ''}`}
                     onClick={handleAnalyzeMaterials}
-                    disabled={analyzing || materialCount === 0}
+                    disabled={analyzing || materialCount === 0 || unanalyzedCount === 0}
                   >
                     <Brain className="h-4 w-4 mr-2" />
                     {analyzing && analysisProgress 
                       ? `Reading... (${analysisProgress.current_page}/${analysisProgress.total_pages}) ${Math.round((analysisProgress.current_page / analysisProgress.total_pages) * 100)}%`
                       : analyzing 
                       ? 'Starting...' 
+                      : unanalyzedCount === 0 && materialCount > 0
+                      ? '✓ All Analyzed'
                       : 'Read & Analyze'}
                   </Button>
                   {/* Pending badge for unanalyzed materials */}
