@@ -148,24 +148,50 @@ export default function Admin() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard
                   icon={<Users className="h-5 w-5" />}
-                  label="Users"
+                  label="Användare"
                   value={stats?.totalUsers ?? 0}
                 />
                 <StatCard
                   icon={<FolderOpen className="h-5 w-5" />}
-                  label="Collections"
+                  label="Samlingar"
                   value={stats?.totalCollections ?? 0}
                 />
                 <StatCard
                   icon={<FileQuestion className="h-5 w-5" />}
-                  label="Quizzes"
+                  label="Quiz"
                   value={stats?.totalQuizzes ?? 0}
                 />
                 <StatCard
                   icon={<Target className="h-5 w-5" />}
-                  label="Attempts"
+                  label="Försök"
                   value={stats?.totalAttempts ?? 0}
                 />
+              </div>
+
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-muted-foreground mb-3">Kostnadsrelaterat</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <StatCard
+                    icon={<Image className="h-5 w-5" />}
+                    label="Uppladdade filer"
+                    value={stats?.totalMaterials ?? 0}
+                  />
+                  <StatCard
+                    icon={<Brain className="h-5 w-5" />}
+                    label="AI-analyser"
+                    value={stats?.totalAnalyses ?? 0}
+                  />
+                  <StatCard
+                    icon={<HelpCircle className="h-5 w-5" />}
+                    label="Genererade frågor"
+                    value={stats?.totalQuestions ?? 0}
+                  />
+                  <StatCard
+                    icon={<HardDrive className="h-5 w-5" />}
+                    label="Lagring (MB)"
+                    value={stats?.totalStorageMB ?? 0}
+                  />
+                </div>
               </div>
             )}
           </CardContent>
