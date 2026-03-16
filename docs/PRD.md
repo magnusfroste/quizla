@@ -147,4 +147,4 @@
 
 ---
 
-*Senast uppdaterad: 2025-11-28*
+*Senast uppdaterad: 2026-03-16*
