@@ -100,7 +100,7 @@ serve(async (req) => {
     const analysisResults = [];
     let pageNumber = 1;
 
-    for (const material of materials) {
+    for (const material of unanalyzedMaterials) {
       console.log(`Analyzing material: ${material.file_name}`);
 
       // Update progress
