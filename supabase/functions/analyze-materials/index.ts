@@ -315,7 +315,7 @@ Return valid JSON:
         .from('analysis_progress')
         .update({
           status: 'complete',
-          current_page: materials.length,
+          current_page: unanalyzedMaterials.length,
           updated_at: new Date().toISOString(),
         })
         .eq('id', progressId);

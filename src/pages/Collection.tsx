@@ -664,6 +664,11 @@ const Collection = () => {
                     {unanalyzedCount} new image{unanalyzedCount === 1 ? '' : 's'} ready to analyze
                   </p>
                 )}
+                {materialCount > 0 && unanalyzedCount === 0 && !analyzing && (
+                  <p className="text-xs text-green-600 dark:text-green-400 text-center font-medium">
+                    ✓ All materials have been analyzed
+                  </p>
+                )}
 
                 {/* Progress bar during analysis */}
                 {analyzing && analysisProgress && (
