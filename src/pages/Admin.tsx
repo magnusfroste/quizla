@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Users, FolderOpen, FileQuestion, Target, Settings, Save, Loader2 } from "lucide-react";
+import { Shield, Users, FolderOpen, FileQuestion, Target, Settings, Save, Loader2, Image, Brain, HelpCircle, HardDrive } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { adminService, AppStats, ConfigItem } from "@/services/admin.service";
