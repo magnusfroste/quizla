@@ -5,6 +5,10 @@ export interface AppStats {
   totalCollections: number;
   totalQuizzes: number;
   totalAttempts: number;
+  totalMaterials: number;
+  totalAnalyses: number;
+  totalQuestions: number;
+  totalStorageMB: number;
 }
 
 export interface ConfigItem {
