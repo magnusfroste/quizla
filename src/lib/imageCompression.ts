@@ -1,4 +1,5 @@
 import imageCompression from 'browser-image-compression';
+import heic2any from 'heic2any';
 
 interface CompressionOptions {
   maxSizeMB?: number;
@@ -31,25 +32,52 @@ export const compressionPresets = {
   },
 } as const;
 
+const HEIC_TYPES = ['image/heic', 'image/heif'];
+
+function isHeicFile(file: File): boolean {
+  if (HEIC_TYPES.includes(file.type.toLowerCase())) return true;
+  const ext = file.name.toLowerCase();
+  return ext.endsWith('.heic') || ext.endsWith('.heif');
+}
+
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const blob = await heic2any({
+    blob: file,
+    toType: 'image/jpeg',
+    quality: 0.92,
+  });
+
+  const resultBlob = Array.isArray(blob) ? blob[0] : blob;
+  const newName = file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg');
+  return new File([resultBlob], newName, { type: 'image/jpeg' });
+}
+
 export async function compressImage(
   file: File,
   options: CompressionOptions = {}
 ): Promise<File> {
-  const defaultOptions = {
-    maxSizeMB: 1.5,
-    maxWidthOrHeight: 1800,
-    useWebWorker: true,
-    initialQuality: 0.85,
-    fileType: 'image/jpeg',
-    ...options,
-  };
-
   try {
-    const compressedFile = await imageCompression(file, defaultOptions);
+    // Convert HEIC/HEIF to JPEG first
+    let processedFile = file;
+    if (isHeicFile(file)) {
+      console.log(`Converting HEIC file: ${file.name}`);
+      processedFile = await convertHeicToJpeg(file);
+      console.log(`Converted to JPEG: ${processedFile.name}`);
+    }
+
+    const defaultOptions = {
+      maxSizeMB: 1.5,
+      maxWidthOrHeight: 1800,
+      useWebWorker: true,
+      initialQuality: 0.85,
+      fileType: 'image/jpeg',
+      ...options,
+    };
+
+    const compressedFile = await imageCompression(processedFile, defaultOptions);
     return compressedFile;
   } catch (error) {
     console.error('Image compression failed:', error);
-    // Return original file if compression fails
     return file;
   }
 }

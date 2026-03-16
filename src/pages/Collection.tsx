@@ -169,7 +169,9 @@ const Collection = () => {
     // Create upload items with previews
     const items = await Promise.all(
       Array.from(files).map(async (file) => {
-        if (!file.type.startsWith('image/')) {
+        const isImage = file.type.startsWith('image/') || 
+          /\.(heic|heif|jpg|jpeg|png|webp|gif)$/i.test(file.name);
+        if (!isImage) {
           return null;
         }
         const preview = await createImagePreview(file);
@@ -216,7 +218,9 @@ const Collection = () => {
           );
 
           const timestamp = Date.now();
-          const filePath = `${userId}/${id}/${timestamp}-${item.file.name}`;
+          // Use compressed file's name (handles HEIC→JPG rename)
+          const fileName = compressedFile.name || item.file.name;
+          const filePath = `${userId}/${id}/${timestamp}-${fileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from('study-materials')
@@ -233,8 +237,8 @@ const Collection = () => {
             .from('materials')
             .insert({
               collection_id: id,
-              file_name: item.file.name,
-              mime_type: item.file.type,
+              file_name: fileName,
+              mime_type: compressedFile.type || 'image/jpeg',
               file_size: compressedFile.size,
               storage_path: filePath,
               material_type: item.materialType,
