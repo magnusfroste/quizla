@@ -48,28 +48,28 @@ export function useUserLimits() {
         .eq('user_id', user.id);
 
       // Get all user's collections with their materials count
-      const { data: collections } = await (supabase as any)
+      const { data: collections } = await supabase
         .from('collections')
         .select('id, materials(count)')
         .eq('user_id', user.id);
 
       // Get quizzes per collection
-      const { data: quizzes } = await (supabase as any)
+      const { data: quizzes } = await supabase
         .from('quizzes')
         .select('collection_id')
-        .in('collection_id', collections?.map((c: any) => c.id) || []);
+        .in('collection_id', collections?.map((c) => c.id) || []);
 
       const materialsPerCollection: Record<string, number> = {};
       const quizzesPerCollection: Record<string, number> = {};
       let materialsTotal = 0;
 
-      collections?.forEach((col: any) => {
+      collections?.forEach((col) => {
         const count = col.materials?.[0]?.count || 0;
         materialsPerCollection[col.id] = count;
         materialsTotal += count;
       });
 
-      quizzes?.forEach((q: any) => {
+      quizzes?.forEach((q) => {
         quizzesPerCollection[q.collection_id] = (quizzesPerCollection[q.collection_id] || 0) + 1;
       });
 
