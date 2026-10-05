@@ -1,0 +1,12 @@
+# Quizla
+
+> Snap. Quiz. Ace. Turn photos of your study notes into AI-generated quizzes.
+
+Quizla lets students photograph or upload their study materials and have AI generate personalized quizzes from them. Questions are grouped into collections that can be studied and repeated, with progress tracked over time.
+
+Built for students preparing for exams who want quick, personalized practice from their own notes.
+
+## Links
+
+- [Quizla](https://quizla.app/): Landing page and sign-up.
+- [Pricing](https://quizla.app/pricing): Plans and pricing.
