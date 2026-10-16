@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getCaller, errorResponse } from "../_shared/caller.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,9 @@ serve(async (req) => {
   }
 
   try {
+    // Betal-API (ElevenLabs): bara inloggade användare.
+    if (!(await getCaller(req))) return errorResponse(401, "Unauthorized", corsHeaders);
+
     const { text, voice = "Aria" } = await req.json();
 
     if (!text) {

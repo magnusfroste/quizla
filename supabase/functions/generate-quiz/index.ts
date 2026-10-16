@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCaller, canUseCollection, errorResponse } from "../_shared/caller.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +24,12 @@ serve(async (req) => {
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const caller = await getCaller(req);
+    if (!caller) return errorResponse(401, 'Unauthorized', corsHeaders);
+    if (!(await canUseCollection(supabase, caller, collectionId))) {
+      return errorResponse(403, 'Forbidden', corsHeaders);
+    }
 
     // Fetch collection
     const { data: collection, error: collectionError } = await supabase
