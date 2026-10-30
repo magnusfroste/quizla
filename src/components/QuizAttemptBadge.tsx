@@ -23,7 +23,7 @@ export const QuizAttemptBadge = ({ attemptCount, className }: QuizAttemptBadgePr
       variant={isTrending ? "default" : "secondary"}
       className={cn(
         "text-xs font-medium px-2",
-        isTrending && "bg-gradient-to-r from-primary to-primary-dark",
+        isTrending && "bg-primary",
         className
       )}
     >

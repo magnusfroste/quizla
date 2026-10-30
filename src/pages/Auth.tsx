@@ -163,8 +163,8 @@ const Auth = () => {
             {/* Logo */}
             <div className="flex items-center justify-center">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent blur-lg opacity-50" />
-                <div className="relative bg-gradient-to-br from-primary to-primary-dark p-3 rounded-xl">
+                
+                <div className="relative bg-primary p-3 rounded-xl">
                   <Zap className="h-7 w-7 text-primary-foreground" />
                 </div>
               </div>
@@ -231,7 +231,7 @@ const Auth = () => {
               </div>
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 transition-opacity"
+                className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 transition-opacity"
                 disabled={loading}
               >
                 {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}

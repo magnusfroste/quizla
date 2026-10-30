@@ -311,7 +311,7 @@ const Quiz = () => {
     // Show conversion modal for anonymous users
     if (isAnonymous) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+        <div className="min-h-screen bg-background">
           <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
             <div className="container mx-auto px-4 py-4 flex items-center gap-3">
               <Button variant="ghost" onClick={() => navigate('/dashboard')}>
@@ -323,7 +323,7 @@ const Quiz = () => {
           </header>
 
           <main className="container mx-auto px-4 py-8 max-w-2xl">
-            <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-xl">
+            <Card className="border-primary/30 bg-primary/5 shadow-xl">
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mb-4">
                   <CheckCircle2 className="h-10 w-10 text-primary" />
@@ -369,7 +369,7 @@ const Quiz = () => {
                 <div className="space-y-3">
                   <Button 
                     onClick={() => navigate('/auth')}
-                    className="w-full h-14 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                    className="w-full h-14 bg-primary text-base font-semibold"
                     size="lg"
                   >
                     Create Free Account
@@ -390,7 +390,7 @@ const Quiz = () => {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      <div className="min-h-screen bg-background">
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
           <div className="container mx-auto px-4 py-4 flex items-center gap-3">
             <Button variant="ghost" onClick={() => navigate(`/collection/${quiz.collection_id}`)}>
@@ -403,7 +403,7 @@ const Quiz = () => {
 
         <main className="container mx-auto px-4 py-8 max-w-3xl">
           {/* Collapsible Score Summary on Mobile */}
-          <Card className="mb-8 md:mb-8 sticky top-16 md:relative z-40 md:z-auto border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg">
+          <Card className="mb-8 md:mb-8 sticky top-16 md:relative z-40 md:z-auto border-primary/30 bg-primary/5 shadow-lg">
             <CardHeader 
               className="cursor-pointer md:cursor-default"
               onClick={() => isMobile && setScoreSummaryExpanded(!scoreSummaryExpanded)}
@@ -563,7 +563,7 @@ const Quiz = () => {
             })}
           </div>
 
-          <Card className="mt-8 mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <Card className="mt-8 mb-8 border-primary/20 bg-primary/5">
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold text-center mb-4">What's next?</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -575,7 +575,7 @@ const Quiz = () => {
                     setScore(null);
                     setCurrentIndex(0);
                   }}
-                  className="w-full h-14 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                  className="w-full h-14 bg-primary text-base font-semibold"
                   size="lg"
                 >
                   <RotateCcw className="h-5 w-5 mr-2" />
@@ -608,7 +608,7 @@ const Quiz = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+    <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center gap-3">
           <Button variant="ghost" onClick={() => navigate(`/collection/${quiz.collection_id}`)}>
@@ -622,7 +622,7 @@ const Quiz = () => {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Sign up banner for anonymous users */}
         {isAnonymous && showSignupBanner && (
-          <Card className="mb-6 border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5">
+          <Card className="mb-6 border-primary/30 bg-primary/5">
             <CardContent className="pt-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
@@ -636,7 +636,7 @@ const Quiz = () => {
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => navigate('/auth')}
-                    className="bg-gradient-to-r from-primary to-primary-dark"
+                    className="bg-primary"
                   >
                     Sign Up
                   </Button>

@@ -117,14 +117,14 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+    <div className="min-h-screen bg-background">
       <Header onSignOut={handleSignOut} />
       
       <main className="container mx-auto px-4 py-8 max-w-2xl">
@@ -141,7 +141,7 @@ const Profile = () => {
           {/* Profile Header */}
           <div className="text-center mb-8">
             <div className="relative inline-block">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl font-bold text-primary-foreground">
+              <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-3xl font-bold text-primary-foreground">
                 {profile?.full_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase() || "U"}
               </div>
               <div className="absolute -bottom-1 -right-1 bg-muted rounded-full p-1.5 border-2 border-background">
@@ -212,7 +212,7 @@ const Profile = () => {
           </Card>
 
           {/* Plan & Usage Card */}
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+          <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-primary" />

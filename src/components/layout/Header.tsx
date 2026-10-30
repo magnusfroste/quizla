@@ -20,13 +20,13 @@ export function Header({ onSignOut, showMenu = true }: HeaderProps) {
           onClick={() => navigate('/dashboard')}
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent blur-lg opacity-50" />
-            <div className="relative bg-gradient-to-br from-primary to-accent p-2.5 rounded-xl">
+            
+            <div className="relative bg-primary p-2.5 rounded-xl">
               <Zap className="h-5 w-5 text-primary-foreground" />
             </div>
           </div>
           <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            <h1 className="text-lg font-bold font-mono">
               Quizla
             </h1>
             <p className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">

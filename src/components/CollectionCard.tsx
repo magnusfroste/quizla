@@ -57,7 +57,7 @@ const CollectionCard = ({ collection, onUpdate }: CollectionCardProps) => {
     <Card className="group hover:shadow-medium transition-all duration-300 border hover:border-primary/50">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div className="bg-gradient-to-br from-primary to-primary-dark p-2 rounded-lg mb-2">
+          <div className="bg-primary p-2 rounded-lg mb-2">
             <BookOpen className="h-5 w-5 text-white" />
           </div>
           {collection.is_public && (

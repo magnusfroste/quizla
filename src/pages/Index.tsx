@@ -19,8 +19,8 @@ const Index = () => {
           {/* Logo */}
           <div className="inline-flex items-center justify-center mb-8 animate-slide-up">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent blur-xl opacity-50 scale-150" />
-              <div className="relative bg-gradient-to-br from-primary to-accent p-4 rounded-2xl shadow-glow">
+              
+              <div className="relative bg-primary p-4 rounded-2xl">
                 <Zap className="h-10 w-10 text-primary-foreground" />
               </div>
             </div>
@@ -39,7 +39,7 @@ const Index = () => {
             <Button
               size="lg"
               onClick={() => navigate("/auth")}
-              className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 transition-all shadow-glow"
+              className="h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 transition-all"
             >
               Start Free
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -109,7 +109,7 @@ const Index = () => {
 
       {/* Features highlight */}
       <section className="container mx-auto px-4 py-16">
-        <div className="bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-3xl p-8 md:p-12 border border-border/50">
+        <div className="bg-primary/5 rounded-3xl p-8 md:p-12 border border-border/50">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="flex-1">
               <Trophy className="h-12 w-12 text-primary mb-4" />
@@ -122,7 +122,7 @@ const Index = () => {
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
-                className="bg-gradient-to-r from-primary to-primary-dark"
+                className="bg-primary"
               >
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />

@@ -503,7 +503,7 @@ const Collection = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+    <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center gap-3">
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
@@ -538,7 +538,7 @@ const Collection = () => {
                       <CardContent className="space-y-3">
                         <Button 
                           size="lg"
-                          className="w-full h-12 bg-gradient-to-r from-primary to-primary-dark text-base font-semibold"
+                          className="w-full h-12 bg-primary text-base font-semibold"
                           onClick={() => navigate(`/quiz/${quiz.id}`)}
                         >
                           <PlayCircle className="h-5 w-5 mr-2" />

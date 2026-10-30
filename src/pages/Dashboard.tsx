@@ -233,7 +233,7 @@ const Dashboard = () => {
                   <div className="flex gap-2 mt-3">
                     <Button
                       onClick={() => navigate(`/quiz/${quiz.id}`)}
-                      className="flex-1 h-10 bg-gradient-to-r from-primary to-primary-dark font-semibold"
+                      className="flex-1 h-10 bg-primary font-semibold"
                       size="sm"
                     >
                       <Zap className="h-4 w-4 mr-1" />
@@ -275,7 +275,7 @@ const Dashboard = () => {
               <h2 className="text-xl font-bold">My Collections</h2>
               <Button
                 onClick={() => setCreateOpen(true)}
-                className="h-10 bg-gradient-to-r from-primary to-primary-dark"
+                className="h-10 bg-primary"
                 size="sm"
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -292,7 +292,7 @@ const Dashboard = () => {
                 </p>
                 <Button
                   onClick={() => setCreateOpen(true)}
-                  className="bg-gradient-to-r from-primary to-primary-dark"
+                  className="bg-primary"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Collection
