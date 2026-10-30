@@ -168,7 +168,7 @@ export function MaterialGallery({ materials, analyses, onMaterialClick, onTypeCh
                 
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                  <p className="text-white text-sm font-medium truncate w-full">
+                  <p className="text-primary-foreground text-sm font-medium truncate w-full">
                     {material.file_name}
                   </p>
                 </div>

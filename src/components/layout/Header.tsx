@@ -13,27 +13,15 @@ export function Header({ onSignOut, showMenu = true }: HeaderProps) {
   const { isAdmin } = useAdmin();
 
   return (
-    <header className="border-b border-border/50 bg-card/80 backdrop-blur-xl sticky top-0 z-50">
+    <header className="border-b border-border bg-background/90 backdrop-blur sticky top-0 z-50 safe-area-top">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div 
-          className="flex items-center gap-3 cursor-pointer" 
+        <button
+          className="flex items-center gap-2"
           onClick={() => navigate('/dashboard')}
         >
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent blur-lg opacity-50" />
-            <div className="relative bg-gradient-to-br from-primary to-accent p-2.5 rounded-xl">
-              <Zap className="h-5 w-5 text-primary-foreground" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-              Quizla
-            </h1>
-            <p className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">
-              Study Smarter
-            </p>
-          </div>
-        </div>
+          <span className="h-3 w-3 rounded-full bg-primary" />
+          <span className="font-mono text-lg font-bold tracking-tight">quizla</span>
+        </button>
 
         {showMenu && (
           <div className="flex items-center gap-2">

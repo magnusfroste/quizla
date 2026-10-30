@@ -129,7 +129,7 @@ const CreateCollectionDialog = ({ open, onOpenChange, onSuccess }: CreateCollect
                 <Button
                   type="button"
                   onClick={() => setUpgradePromptOpen(true)}
-                  className="bg-gradient-to-r from-primary to-primary-dark"
+                  className="bg-primary"
                 >
                   Uppgradera
                 </Button>
@@ -137,7 +137,7 @@ const CreateCollectionDialog = ({ open, onOpenChange, onSuccess }: CreateCollect
                 <Button
                   type="submit"
                   disabled={loading || !title.trim()}
-                  className="bg-gradient-to-r from-primary to-primary-dark"
+                  className="bg-primary"
                 >
                   {loading ? "Creating..." : "Create Collection"}
                 </Button>
