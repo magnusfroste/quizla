@@ -123,7 +123,7 @@
 
   /* Gradient text */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    @apply text-primary;
   }
 
   /* Glass morphism */
