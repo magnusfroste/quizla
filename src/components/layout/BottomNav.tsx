@@ -1,10 +1,9 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, BookOpen, TrendingUp, User } from "lucide-react";
+import { Home, TrendingUp, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
-  { icon: BookOpen, label: "Study", path: "/dashboard?tab=collections" },
   { icon: TrendingUp, label: "Stats", path: "/dashboard?tab=analytics" },
   { icon: User, label: "Profile", path: "/profile" },
 ];

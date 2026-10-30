@@ -29,6 +29,7 @@ const Dashboard = () => {
     topicStats: [],
   });
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
