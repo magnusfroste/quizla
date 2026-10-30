@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, BookOpen, Trophy, Target, TrendingUp, PlayCircle, Share2, Zap } from "lucide-react";
+import { Camera, ChevronRight, Play, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CollectionCard from "@/components/CollectionCard";
 import CreateCollectionDialog from "@/components/CreateCollectionDialog";
 import { QuizHistory } from "@/components/QuizHistory";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { TopicBreakdown } from "@/components/TopicBreakdown";
 import { ShareQuizDialog } from "@/components/ShareQuizDialog";
-import { QuizAttemptBadge } from "@/components/QuizAttemptBadge";
 import { Header } from "@/components/layout/Header";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { LoadingSpinner } from "@/components/layout/LoadingSpinner";
@@ -188,138 +185,105 @@ const Dashboard = () => {
     return <LoadingSpinner />;
   }
 
+  const showStats = searchParams.get("tab") === "analytics";
+  const firstName = (user?.user_metadata?.full_name || user?.email || "").split(/[ @]/)[0];
+
   return (
     <PageContainer>
       <Header onSignOut={handleSignOut} />
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {[
-            { icon: BookOpen, label: "Collections", value: collections.length, color: "primary" },
-            { icon: Trophy, label: "Completed", value: analytics.totalAttempts, color: "secondary" },
-            { icon: Target, label: "Avg Score", value: `${analytics.averageScore}%`, color: "accent" },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-card rounded-xl p-4 border shadow-soft">
-              <div className={`inline-flex p-2 rounded-lg bg-${stat.color}/10 mb-2`}>
-                <stat.icon className={`h-4 w-4 text-${stat.color}`} />
-              </div>
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Ready to Learn Section */}
-        {quizzes.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <PlayCircle className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-bold">Ready to Learn</h2>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
-              {quizzes.slice(0, 6).map((quiz) => (
-                <div
-                  key={quiz.id}
-                  className="flex-shrink-0 w-[280px] bg-card rounded-xl p-4 border shadow-soft"
-                >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <p className="text-xs text-muted-foreground truncate">
-                      {quiz.collections?.title || 'Collection'}
-                    </p>
-                    <QuizAttemptBadge attemptCount={quiz.attemptCount || 0} />
-                  </div>
-                  <h3 className="font-semibold text-sm truncate mb-1">{quiz.title}</h3>
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      onClick={() => navigate(`/quiz/${quiz.id}`)}
-                      className="flex-1 h-10 bg-primary font-semibold"
-                      size="sm"
-                    >
-                      <Zap className="h-4 w-4 mr-1" />
-                      Start
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10"
-                      onClick={() => {
-                        setSelectedQuiz(quiz);
-                        setShareDialogOpen(true);
-                      }}
-                    >
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+      <main className="container mx-auto px-4 py-6 max-w-2xl space-y-8">
+        {showStats ? (
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold">Stats</h2>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Quizzes done", value: analytics.totalAttempts },
+                { label: "Avg score", value: `${analytics.averageScore}%` },
+                { label: "Collections", value: collections.length },
+              ].map((s) => (
+                <div key={s.label} className="rounded-xl border bg-card p-3">
+                  <p className="font-mono text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Tabs */}
-        <Tabs defaultValue="collections" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 h-12">
-            <TabsTrigger value="collections" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Collections</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Analytics</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="collections" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">My Collections</h2>
-              <Button
-                onClick={() => setCreateOpen(true)}
-                className="h-10 bg-primary"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">New</span>
-              </Button>
-            </div>
-
-            {collections.length === 0 ? (
-              <div className="text-center py-12 bg-card rounded-2xl border">
-                <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-semibold mb-2">No collections yet</h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  Create your first collection to start
-                </p>
-                <Button
-                  onClick={() => setCreateOpen(true)}
-                  className="bg-primary"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Collection
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {collections.map((collection) => (
-                  <CollectionCard
-                    key={collection.id}
-                    collection={collection}
-                    onUpdate={loadCollections}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-4">
-            <h2 className="text-xl font-bold">Performance</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <PerformanceChart attempts={analytics.attempts} />
-              <TopicBreakdown topics={analytics.topicStats} />
-            </div>
+            <PerformanceChart attempts={analytics.attempts} />
+            <TopicBreakdown topics={analytics.topicStats} />
             <QuizHistory attempts={analytics.attempts.slice(0, 10)} />
-          </TabsContent>
-        </Tabs>
+          </section>
+        ) : (
+          <>
+            <section>
+              <p className="text-muted-foreground text-sm">Hi {firstName}</p>
+              <h2 className="text-2xl font-bold mb-4">Snap. Quiz. Ace.</h2>
+              <button
+                onClick={() => setCreateOpen(true)}
+                className="w-full flex items-center gap-4 rounded-2xl bg-primary text-primary-foreground p-5 text-left active:scale-[0.98] transition-transform tap-highlight-none"
+              >
+                <span className="rounded-full bg-foreground text-background p-3">
+                  <Camera className="h-6 w-6" />
+                </span>
+                <span>
+                  <span className="block font-mono text-lg font-bold">Scan notes</span>
+                  <span className="block text-sm opacity-80">Start a new collection</span>
+                </span>
+              </button>
+            </section>
+
+            {quizzes.length > 0 && (
+              <section>
+                <h3 className="text-sm font-bold uppercase text-muted-foreground mb-2">Quizzes</h3>
+                <ul className="divide-y divide-border rounded-2xl border bg-card">
+                  {quizzes.slice(0, 5).map((quiz) => (
+                    <li key={quiz.id} className="flex items-center gap-3 p-3">
+                      <button className="flex-1 min-w-0 text-left" onClick={() => navigate(`/quiz/${quiz.id}`)}>
+                        <p className="font-medium truncate">{quiz.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {quiz.collections?.title} · {quiz.attemptCount || 0}× played
+                        </p>
+                      </button>
+                      <Button variant="ghost" size="icon" onClick={() => { setSelectedQuiz(quiz); setShareDialogOpen(true); }}>
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" className="rounded-full" onClick={() => navigate(`/quiz/${quiz.id}`)}>
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <section>
+              <h3 className="text-sm font-bold uppercase text-muted-foreground mb-2">Collections</h3>
+              {collections.length === 0 ? (
+                <p className="text-sm text-muted-foreground rounded-2xl border border-dashed p-6 text-center">
+                  Nothing yet — scan your first page above.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border rounded-2xl border bg-card">
+                  {collections.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        onClick={() => navigate(`/collection/${c.id}`)}
+                        className="w-full flex items-center justify-between gap-3 p-3 text-left"
+                      >
+                        <span className="min-w-0">
+                          <span className="block font-medium truncate">{c.title}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {c.materials?.[0]?.count || 0} pages
+                          </span>
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </>
+        )}
       </main>
 
       <CreateCollectionDialog
