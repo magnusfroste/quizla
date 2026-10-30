@@ -97,7 +97,7 @@ const Index = () => {
               <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity" />
               <div className="bg-card border rounded-2xl p-6 text-center hover:border-primary/50 transition-colors h-full">
                 <div className={`inline-flex p-4 rounded-xl bg-gradient-to-br ${step.color} mb-4`}>
-                  <step.icon className="h-6 w-6 text-white" />
+                  <step.icon className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
                 <p className="text-muted-foreground text-sm">{step.description}</p>

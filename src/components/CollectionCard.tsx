@@ -58,7 +58,7 @@ const CollectionCard = ({ collection, onUpdate }: CollectionCardProps) => {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="bg-primary p-2 rounded-lg mb-2">
-            <BookOpen className="h-5 w-5 text-white" />
+            <BookOpen className="h-5 w-5 text-primary-foreground" />
           </div>
           {collection.is_public && (
             <span className="text-xs bg-secondary/10 text-secondary px-2 py-1 rounded-full">

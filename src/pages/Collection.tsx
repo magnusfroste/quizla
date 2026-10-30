@@ -647,7 +647,7 @@ const Collection = () => {
                   </Button>
                   {/* Pending badge for unanalyzed materials */}
                   {!analyzing && unanalyzedCount > 0 && (
-                    <span className="absolute -top-2 -right-2 h-6 min-w-6 px-1.5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
+                    <span className="absolute -top-2 -right-2 h-6 min-w-6 px-1.5 bg-orange-500 text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
                       {unanalyzedCount}
                     </span>
                   )}
