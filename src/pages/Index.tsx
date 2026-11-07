@@ -57,7 +57,7 @@ const Index = () => {
           {/* Social proof */}
           <p className="mt-8 text-sm text-muted-foreground animate-slide-up stagger-4">
             <Users className="inline h-4 w-4 mr-1" />
-            Join 10,000+ students studying smarter
+            Free to start. Share quizzes with your classmates.
           </p>
         </div>
       </section>
