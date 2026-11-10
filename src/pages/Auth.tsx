@@ -96,24 +96,28 @@ const Auth = () => {
         });
         navigate("/dashboard");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             data: {
               full_name: fullName.trim(),
             },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: window.location.origin,
           },
         });
 
         if (error) throw error;
 
-        toast({
-          title: "Account created!",
-          description: "Welcome to Quizla. Let's start learning!",
-        });
-        navigate("/dashboard");
+        if (data.session) {
+          navigate("/dashboard");
+        } else {
+          toast({
+            title: "Check your email",
+            description: "Click the confirmation link, then sign in here.",
+          });
+          setIsLogin(true);
+        }
       }
     } catch (error: any) {
       toast({
