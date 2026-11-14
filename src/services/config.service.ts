@@ -26,7 +26,10 @@ export const configService = {
       .from('app_config')
       .select('key, value');
 
-    if (error) throw error;
+    // Guests can't read settings; fall back to the defaults below.
+    if (error && !(await supabase.auth.getSession()).data.session) {
+      // eslint-disable-next-line no-empty
+    } else if (error) throw error;
 
     const config: Record<string, number> = {};
     (data as ConfigRow[])?.forEach((row) => {
