@@ -35,12 +35,9 @@ export function MobileQuizNavigation({
           <ChevronLeft className="h-5 w-5" />
         </Button>
 
-        <div className="flex flex-col items-center justify-center flex-1 min-w-0">
-          <span className="text-sm font-medium">
+        <div className="flex items-center justify-center flex-1 min-w-0">
+          <span className="font-mono text-sm font-bold">
             {currentIndex + 1} / {totalQuestions}
-          </span>
-          <span className="text-xs text-muted-foreground truncate">
-            Question {currentIndex + 1}
           </span>
         </div>
 

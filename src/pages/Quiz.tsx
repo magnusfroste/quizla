@@ -1,14 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, RotateCcw, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { MobileQuizNavigation } from "@/components/MobileQuizNavigation";
 import { useTouchSwipe } from "@/hooks/use-touch-swipe";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Question {
   id: string;
@@ -34,11 +40,90 @@ interface Quiz {
 }
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
+const LONG_QUESTION = 150;
+
+/* ---------- One reviewed question ---------- */
+function ReviewItem({
+  index,
+  question,
+  userAnswer,
+}: {
+  index: number;
+  question: Question;
+  userAnswer?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const isCorrect = userAnswer === question.correct_answer;
+  const long = question.question_text.length > LONG_QUESTION;
+  const showToggle = long || !!question.explanation;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex items-start gap-3">
+        <span
+          className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${
+            isCorrect ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
+          }`}
+        >
+          {isCorrect ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-xs text-muted-foreground">
+            {index + 1}
+            {question.topic_category ? ` · ${question.topic_category}` : ""}
+          </p>
+          <p
+            className={`text-sm font-medium leading-snug ${
+              open ? "" : "line-clamp-2 md:line-clamp-none"
+            }`}
+          >
+            {question.question_text}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-2 space-y-1 pl-9 text-sm">
+        <p className={isCorrect ? "text-foreground" : "text-destructive"}>
+          {userAnswer || "No answer"}
+        </p>
+        {!isCorrect && (
+          <p className="font-medium text-foreground">{question.correct_answer}</p>
+        )}
+      </div>
+
+      {question.explanation && (
+        <p className="mt-2 ml-9 hidden bg-muted/60 p-3 text-sm text-muted-foreground md:block">
+          {question.explanation}
+        </p>
+      )}
+
+      {showToggle && (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="mt-2 ml-9 flex items-center gap-1 font-mono text-xs font-bold text-primary md:hidden"
+        >
+          {open ? "Show less" : "Why?"}
+          <ChevronDown
+            className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
+
+      {open && question.explanation && (
+        <p className="mt-2 ml-9 rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground md:hidden">
+          {question.explanation}
+        </p>
+      )}
+    </div>
+  );
+}
 
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -51,6 +136,9 @@ const Quiz = () => {
   const [shuffledAnswers, setShuffledAnswers] = useState<Record<string, string[]>>({});
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showSignupBanner, setShowSignupBanner] = useState(true);
+  const [showFullQuestion, setShowFullQuestion] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const reviewTouched = useRef(false);
 
   useTouchSwipe({
     onSwipeLeft: () => !submitted && handleNext(),
@@ -61,6 +149,14 @@ const Quiz = () => {
     loadQuiz();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    setShowFullQuestion(false);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (isMobile && !reviewTouched.current) setShowReview(false);
+  }, [isMobile]);
 
   const loadQuiz = async () => {
     if (!id) return;
@@ -241,6 +337,11 @@ const Quiz = () => {
     setCurrentIndex(0);
   };
 
+  const toggleReview = () => {
+    reviewTouched.current = true;
+    setShowReview((s) => !s);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -261,6 +362,7 @@ const Quiz = () => {
   const currentQuestion = questions[currentIndex];
   const selectedAnswer = answers[currentQuestion.id];
   const percent = Math.round(((score || 0) / questions.length) * 100);
+  const questionIsLong = currentQuestion.question_text.length > LONG_QUESTION;
 
   // ---------- RESULTS ----------
   if (submitted) {
@@ -277,45 +379,43 @@ const Quiz = () => {
           </header>
 
           <main className="container mx-auto px-4 py-10 max-w-md">
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <p className="font-mono text-6xl font-bold text-primary">
                 {score}<span className="text-2xl text-muted-foreground">/{questions.length}</span>
               </p>
-              <p className="text-muted-foreground mt-2">{percent}% correct</p>
+              <p className="text-muted-foreground mt-1">{percent}% correct</p>
             </div>
 
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <p className="font-semibold text-center">Create a free account to:</p>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>See explanations for every answer</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Track your progress over time</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Create and share your own quizzes</span>
-                  </li>
-                </ul>
-                <Button
-                  onClick={() => navigate('/auth')}
-                  className="w-full h-12 font-semibold"
-                >
-                  Create Free Account
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full"
-                >
-                  Continue as Guest
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+              <p className="font-semibold text-center">Create a free account to:</p>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>See every explanation</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>Track your progress</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>Save and share quizzes</span>
+                </li>
+              </ul>
+              <Button
+                onClick={() => navigate('/auth')}
+                className="w-full h-12 font-semibold"
+              >
+                Create Free Account
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/dashboard')}
+                className="w-full"
+              >
+                Continue as Guest
+              </Button>
+            </div>
           </main>
         </div>
       );
@@ -329,6 +429,7 @@ const Quiz = () => {
       if (answers[q.id] === q.correct_answer) topicScores[topic].correct++;
     });
     const topics = Object.entries(topicScores);
+    const reviewVisible = isMobile ? showReview : true;
 
     return (
       <div className="min-h-screen bg-background">
@@ -341,16 +442,16 @@ const Quiz = () => {
           </div>
         </header>
 
-        <main className="container mx-auto px-4 py-8 max-w-2xl pb-24 md:pb-8">
+        <main className="container mx-auto px-4 py-6 max-w-2xl pb-24 md:pb-8">
           {/* Score */}
-          <div className="text-center mb-8">
+          <div className="text-center">
             <p className="font-mono text-6xl font-bold text-primary">
               {score}<span className="text-2xl text-muted-foreground">/{questions.length}</span>
             </p>
-            <p className="text-muted-foreground mt-2">{percent}% correct</p>
+            <p className="text-muted-foreground mt-1">{percent}% correct</p>
 
             {topics.length > 1 && (
-              <div className="flex flex-wrap gap-2 justify-center mt-4">
+              <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                 {topics.map(([topic, s]) => (
                   <Badge key={topic} variant="outline" className="text-xs">
                     {topic}: {s.correct}/{s.total}
@@ -359,58 +460,45 @@ const Quiz = () => {
               </div>
             )}
 
-            <div className="flex gap-3 justify-center mt-6">
-              <Button onClick={handleRetake} className="font-semibold">
+            <div className="mt-5 grid grid-cols-1 gap-2 sm:flex sm:justify-center">
+              <Button onClick={handleRetake} className="h-12 w-full font-semibold sm:w-auto">
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
-              <Button variant="outline" onClick={() => navigate(`/collection/${quiz.collection_id}`)}>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/collection/${quiz.collection_id}`)}
+                className="h-12 w-full sm:w-auto"
+              >
                 Back to Collection
               </Button>
             </div>
           </div>
 
           {/* Review */}
-          <h2 className="font-mono font-bold text-lg mb-4">Review</h2>
-          <div className="space-y-3">
-            {questions.map((question, idx) => {
-              const userAnswer = answers[question.id];
-              const isCorrect = userAnswer === question.correct_answer;
-              return (
-                <Card key={question.id}>
-                  <CardContent className="pt-5 space-y-3">
-                    <div className="flex items-start gap-3">
-                      {isCorrect ? (
-                        <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {idx + 1}{question.topic_category ? ` · ${question.topic_category}` : ''}
-                        </p>
-                        <p className="font-medium">{question.question_text}</p>
-                      </div>
-                    </div>
+          <div className="mt-8">
+            <button
+              onClick={toggleReview}
+              className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 font-mono text-sm font-bold md:hidden"
+            >
+              Review ({questions.length})
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${showReview ? "rotate-180" : ""}`}
+              />
+            </button>
 
-                    <div className="pl-8 space-y-1 text-sm">
-                      <p className={isCorrect ? 'text-foreground' : 'text-destructive'}>
-                        {userAnswer || 'No answer'}
-                      </p>
-                      {!isCorrect && (
-                        <p className="text-foreground font-medium">{question.correct_answer}</p>
-                      )}
-                    </div>
-
-                    {question.explanation && (
-                      <div className="ml-8 bg-muted/60 rounded-md p-3">
-                        <p className="text-sm text-muted-foreground">{question.explanation}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {reviewVisible && (
+              <div className="mt-4 space-y-2.5">
+                {questions.map((question, idx) => (
+                  <ReviewItem
+                    key={question.id}
+                    index={idx}
+                    question={question}
+                    userAnswer={answers[question.id]}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </main>
       </div>
@@ -433,9 +521,9 @@ const Quiz = () => {
         <Progress value={((currentIndex + 1) / questions.length) * 100} className="h-1 rounded-none" />
       </header>
 
-      <main className="container mx-auto px-4 py-6 max-w-2xl">
+      <main className="container mx-auto px-4 pt-5 pb-28 max-w-2xl md:pb-8">
         {isAnonymous && showSignupBanner && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-2.5">
             <p className="text-sm text-muted-foreground">
               Sign up to save your score.
             </p>
@@ -448,43 +536,64 @@ const Quiz = () => {
           </div>
         )}
 
-        <Card>
-          <CardContent className="pt-6 space-y-5">
-            {currentQuestion.topic_category && (
-              <Badge variant="outline" className="text-xs">
-                {currentQuestion.topic_category}
-              </Badge>
-            )}
+        {/* Question */}
+        <div>
+          {currentQuestion.topic_category && (
+            <Badge variant="outline" className="font-mono text-xs uppercase">
+              {currentQuestion.topic_category}
+            </Badge>
+          )}
 
-            <h2 className="text-xl font-semibold leading-snug">
-              {currentQuestion.question_text}
-            </h2>
+          <h2
+            className={`mt-2 text-lg font-semibold leading-snug md:text-xl ${
+              questionIsLong && !showFullQuestion
+                ? "line-clamp-4 md:line-clamp-none"
+                : ""
+            }`}
+          >
+            {currentQuestion.question_text}
+          </h2>
 
-            <div className="space-y-2">
-              {(shuffledAnswers[currentQuestion.id] || []).map((answer, idx) => {
-                const isSelected = selectedAnswer === answer;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handleAnswer(answer)}
-                    className={`w-full text-left flex items-center gap-3 p-4 rounded-lg border-2 transition-colors min-h-[56px] ${
-                      isSelected
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary/40 hover:bg-muted/40'
-                    }`}
-                  >
-                    <span className={`font-mono text-sm font-bold h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {LETTERS[idx]}
-                    </span>
-                    <span className="text-base">{answer}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+          {questionIsLong && (
+            <button
+              onClick={() => setShowFullQuestion((s) => !s)}
+              className="mt-1 font-mono text-xs font-bold text-primary md:hidden"
+            >
+              {showFullQuestion ? "Show less" : "Show full question"}
+            </button>
+          )}
+        </div>
+
+        {/* Answers */}
+        <div className="mt-5 space-y-2.5">
+          {(shuffledAnswers[currentQuestion.id] || []).map((answer, idx) => {
+            const isSelected = selectedAnswer === answer;
+            return (
+              <button
+                key={idx}
+                onClick={() => handleAnswer(answer)}
+                aria-pressed={isSelected}
+                className={`flex min-h-[60px] w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card"
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full font-mono text-sm font-bold ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {LETTERS[idx]}
+                </span>
+                <span className="flex-1 text-base leading-snug">{answer}</span>
+                {isSelected && <Check className="h-5 w-5 flex-shrink-0 text-primary" />}
+              </button>
+            );
+          })}
+        </div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex gap-3 justify-between mt-6">
@@ -517,8 +626,6 @@ const Quiz = () => {
           isLastQuestion={currentIndex === questions.length - 1}
         />
       </main>
-
-      <div className="md:hidden h-24" />
     </div>
   );
 };
