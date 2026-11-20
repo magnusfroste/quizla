@@ -584,6 +584,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_app_limits: {
+        Args: never
+        Returns: {
+          key: string
+          value: string
+        }[]
+      }
       has_collection_share_access: {
         Args: { _collection_id: string; _user_id: string }
         Returns: boolean

@@ -22,14 +22,9 @@ interface ConfigRow {
 
 export const configService = {
   async getAll(): Promise<AppConfig> {
-    const { data, error } = await (supabase as any)
-      .from('app_config')
-      .select('key, value');
-
-    // Guests can't read settings; fall back to the defaults below.
-    if (error && !(await supabase.auth.getSession()).data.session) {
-      // eslint-disable-next-line no-empty
-    } else if (error) throw error;
+    const { data, error } = await (supabase.rpc as any)('get_app_limits');
+    // On error, fall back to the defaults below.
+    if (error) console.error('Could not load limits');
 
     const config: Record<string, number> = {};
     (data as ConfigRow[])?.forEach((row) => {
