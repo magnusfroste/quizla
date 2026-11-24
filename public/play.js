@@ -12,6 +12,8 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const saved = (token) => { try { return JSON.parse(sessionStorage.getItem(`quizla:a:${token}`)) || {}; } catch (e) { return {}; } };
 const save = (token, answers) => { try { sessionStorage.setItem(`quizla:a:${token}`, JSON.stringify(answers)); } catch (e) { /* private mode */ } };
 const forget = (token) => { try { sessionStorage.removeItem(`quizla:a:${token}`); } catch (e) { /* private mode */ } };
+// skolappar's usage snippet (kotten.js): anonymous counts only, never answers or names.
+const report = (name, value) => { try { window.skolappar?.event(name, value); } catch (e) { /* the app works without it */ } };
 
 // ---------------------------------------------------------------- the player
 
@@ -81,6 +83,7 @@ function player(ctx, { attempt, questions, exit, done }) {
     busy(next, async () => {
       const r = await api(`/attempts/${attempt.token}/submit`, { answers });
       forget(attempt.token);
+      report('round_done', r.result.pct);
       done(r);
     });
   }
@@ -106,6 +109,7 @@ function player(ctx, { attempt, questions, exit, done }) {
     }
   }, { signal: ctx.signal });
 
+  report('round_start');
   draw();
   return el;
 }
@@ -149,6 +153,7 @@ function resultView({ result, game, back, retry, quiz, note }) {
   const rewards = [];
   if (game) {
     const leveled = result.xp > 0 && game.xp - result.xp < game.floor;
+    if (leveled) report('level', game.level);
     rewards.push(h('div', { class: 'row wrap center' },
       result.xp > 0 && h('span', { class: 'xp mono' }, icon('bolt', 'fill'), `+${result.xp} XP`),
       result.improved && chip('Nytt rekord', 'orange', 'refresh'),

@@ -148,11 +148,13 @@ async function main() {
   section('The page and its rules');
   r = await anon.get('/');
   ok(r.status === 200 && r.text.includes('<div id="app">'), 'the app page is served');
-  ok(/script-src 'self'/.test(r.headers.get('content-security-policy') || ''), "CSP allows scripts from 'self' only");
+  ok(/script-src 'self' https:\/\/www\.skolappar\.com;/.test(r.headers.get('content-security-policy') || ''), "CSP allows scripts from 'self' and skolappar's snippet only");
+  ok(/connect-src 'self' https:\/\/www\.skolappar\.com;/.test(r.headers.get('content-security-policy') || ''), "CSP allows connections to 'self' and skolappar.com only");
+  ok(r.text.includes('<script src="https://www.skolappar.com/kotten.js" defer></script>'), "index.html loads skolappar's usage snippet");
   ok(!/<script(?![^>]*\ssrc=)[^>]*>/i.test(r.text) && !/\son[a-z]+\s*=/i.test(r.text), 'index.html has no inline script and no inline event handler');
   const sources = fs.readdirSync(path.join(ROOT, 'public')).filter((f) => /\.(js|html)$/.test(f)).map((f) => [f, fs.readFileSync(path.join(ROOT, 'public', f), 'utf8')]);
   eq(sources.filter(([, s]) => /innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(/.test(s)).map(([f]) => f), [], 'no innerHTML (or the like) anywhere in public/');
-  eq(sources.filter(([, s]) => /https?:\/\/(?!www\.w3\.org\/2000\/svg)/.test(s)).map(([f]) => f), [], 'no address of another site in public/ (no CDN, fonts or trackers)');
+  eq(sources.filter(([, s]) => /https?:\/\/(?!www\.w3\.org\/2000\/svg|www\.skolappar\.com\/kotten\.js")/.test(s)).map(([f]) => f), [], 'no address of another site in public/ but skolappar\'s snippet (no CDN, fonts or trackers)');
   r = await anon.get('/quiz/abcdefgh1234');
   ok(r.status === 200 && r.text.includes('<div id="app">'), '/quiz/<id> serves the app');
   r = await anon.get('/api/me');
